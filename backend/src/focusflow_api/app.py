@@ -2,9 +2,10 @@ from fastapi import Depends, FastAPI
 
 from focusflow_api.config import Settings, get_settings
 
+
 def create_app():
     app = FastAPI()
-    
+
     @app.get("/health")
     def get_health(settings: Settings = Depends(get_settings)):
         return {
@@ -12,4 +13,4 @@ def create_app():
             "env": settings.app_env,
         }
 
-    return app;
+    return app
