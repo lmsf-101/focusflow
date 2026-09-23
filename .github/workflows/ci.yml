@@ -1,0 +1,45 @@
+name: CI
+on:
+    pull_request:
+    push:
+      branches: [main]
+jobs:
+    backend:
+      runs-on: ubuntu-latest
+      env:
+        POSTGRES_USER: "ci"
+        POSTGRES_PASSWORD: "ci"
+        POSTGRES_DB: "ci"
+
+      services:
+        postgres:
+          image: postgres:16-alpine
+          env:
+            POSTGRES_USER: "ci"
+            POSTGRES_PASSWORD: "ci"
+            POSTGRES_DB: "ci"
+          ports:
+            - 5432:5432
+          options: >-
+            --health-cmd "pg_isready -U ci -d ci"
+            --health-interval 5s
+            --health-timeout 5s
+            --health-retries 10
+      defaults:
+        run:
+          working-directory: backend
+      steps:
+        - name: Check repository code
+          uses: actions/checkout@v7
+        - name: Setup uv
+          uses: astral-sh/setup-uv@v10
+        - name: Run uv sync (and check uv.lock)
+          run: uv sync --locked
+        - name: Run tests through pytest
+          run: uv run pytest
+        - name: Probar migraciones de BD
+          run: uv run --locked alembic upgrade head
+        - name: Verificar downgrades de migraciones
+          run: uv run --locked alembic downgrade base
+        - name: Verificar upgrade de migraciones
+          run: uv run --locked alembic upgrade head
