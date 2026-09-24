@@ -18,6 +18,13 @@ Aplicación realizada con TS + React + Python que sirve como un gestion de tarea
 `frontend/` -> Código de interfaz del usuario y componentes, mediante Typescript + React
 
 
+### Arquitectura
+
+Hoy corre en local con Docker Compose (frontend, backend y PostgreSQL). El destino planeado es AWS.
+
+*TODO:* Diseño de la arquitectura AWS; el estado actual está en
+[`docs/architecture.md`](docs/architecture.md).
+
 ### Levantar aplicacion
 
 *TODO*
