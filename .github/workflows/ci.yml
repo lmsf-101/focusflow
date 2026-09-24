@@ -1,0 +1,96 @@
+name: CI
+on:
+    pull_request:
+    push:
+      branches: [main]
+jobs:
+    backend:
+      runs-on: ubuntu-latest
+      env:
+        POSTGRES_USER: "ci"
+        POSTGRES_PASSWORD: "ci"
+        POSTGRES_DB: "ci"
+
+      services:
+        postgres:
+          image: postgres:16-alpine
+          env:
+            POSTGRES_USER: "ci"
+            POSTGRES_PASSWORD: "ci"
+            POSTGRES_DB: "ci"
+          ports:
+            - 5432:5432
+          options: >-
+            --health-cmd "pg_isready -U ci -d ci"
+            --health-interval 5s
+            --health-timeout 5s
+            --health-retries 10
+      defaults:
+        run:
+          working-directory: backend
+      steps:
+        - name: Check repository code
+          uses: actions/checkout@v7
+        - name: Setup uv
+          uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+          with:
+            version: "0.12.15"
+        - name: Run uv sync (and check uv.lock)
+          run: uv sync --locked
+        - name: Run tests through pytest
+          run: uv run pytest
+        - name: Test database migrations (Alembic)
+          run: uv run --locked alembic upgrade head
+        - name: Verify downgrade migrations
+          run: uv run --locked alembic downgrade base
+        - name: Verify migration upgrades
+          run: uv run --locked alembic upgrade head
+
+    lint:
+      runs-on: ubuntu-latest
+      defaults:
+        run:
+          working-directory: backend
+      steps:
+        - name: Check repository code
+          uses: actions/checkout@v7
+        - name: Setup uv
+          uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4
+          with:
+            version: "0.12.15"
+        - name: Install dev dependencies
+          run: uv sync --only-dev --locked
+        - name: Run pre-commit
+          run: uv run --no-sync --locked pre-commit run --all-files
+
+    docker-backend:
+      runs-on: ubuntu-latest
+      defaults:
+        run:
+          working-directory: backend
+      steps:
+        - name: Check repository code
+          uses: actions/checkout@v7
+        - name: Run docker build
+          run: docker build -t backend .
+
+    frontend:
+      runs-on: ubuntu-latest
+      defaults:
+        run:
+          working-directory: frontend
+      steps:
+        - name: Check repository code
+          uses: actions/checkout@v7
+        - name: Setup node
+          uses: actions/setup-node@v7
+          with:
+            node-version: '24'
+            cache: 'npm'
+            cache-dependency-path: frontend/package-lock.json
+        - name: Instalar dependencias de frontend
+          run: npm ci
+        - name: Ejecutar lint de node
+          run: npm run lint
+        - name: Ejecutar build con exito
+          run: npm run build

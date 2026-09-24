@@ -18,6 +18,7 @@ services:
     - "8000:8000"
     environment:
       APP_ENV: local
+      POSTGRES_HOST: postgres
     volumes:
       - ./backend:/app
       - /app/.venv
