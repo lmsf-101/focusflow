@@ -37,11 +37,11 @@ jobs:
           run: uv sync --locked
         - name: Run tests through pytest
           run: uv run pytest
-        - name: Probar migraciones de BD
+        - name: Test database migrations (Alembic)
           run: uv run --locked alembic upgrade head
-        - name: Verificar downgrades de migraciones
+        - name: Verify downgrade migrations
           run: uv run --locked alembic downgrade base
-        - name: Verificar upgrade de migraciones
+        - name: Verify migration upgrades
           run: uv run --locked alembic upgrade head
 
     lint:
