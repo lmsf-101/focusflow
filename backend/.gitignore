@@ -10,4 +10,4 @@ wheels/
 .venv/
 
 # Coverage
-.coverage/
+.coverage
