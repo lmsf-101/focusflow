@@ -29,7 +29,15 @@ dev = [
     "httpx2>=2.13.1",
     "pre-commit>=4.6.2",
     "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
 ]
 
 [tool.ruff.lint.flake8-bugbear]
 extend-immutable-calls = ["fastapi.Depends"]
+
+[tool.pytest.ini_options]
+  addopts = "--cov=focusflow_api --cov-report=term-missing --cov-fail-under=85 --strict-markers"
+  testpaths = ["tests"]
+  markers = [
+      "integration: tests with DB interaction",
+  ]
