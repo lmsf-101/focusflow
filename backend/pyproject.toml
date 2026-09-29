@@ -11,6 +11,8 @@ dependencies = [
     "pwdlib[argon2]>=0.3.1",
     "pydantic-settings>=2.15.0",
     "pydantic[email]>=2.13.5",
+    "pyjwt>=2.15.0",
+    "python-multipart>=0.0.32",
     "sqlalchemy>=2.0.54",
     "uvicorn[standard]>=0.52.4",
 ]
@@ -27,7 +29,15 @@ dev = [
     "httpx2>=2.13.1",
     "pre-commit>=4.6.2",
     "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
 ]
 
 [tool.ruff.lint.flake8-bugbear]
 extend-immutable-calls = ["fastapi.Depends"]
+
+[tool.pytest.ini_options]
+  addopts = "--cov=focusflow_api --cov-report=term-missing --cov-fail-under=85 --strict-markers"
+  testpaths = ["tests"]
+  markers = [
+      "integration: tests with DB interaction",
+  ]

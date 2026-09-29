@@ -10,6 +10,8 @@ jobs:
         POSTGRES_USER: "ci"
         POSTGRES_PASSWORD: "ci"
         POSTGRES_DB: "ci"
+        SECRET_KEY: "ci"
+        ACCESS_TOKEN_EXPIRE_MINUTES: "5"
 
       services:
         postgres:
