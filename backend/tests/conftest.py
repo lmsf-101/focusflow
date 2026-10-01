@@ -95,3 +95,29 @@ def registered_user(client) -> dict[str, str]:
     assert response.status_code == 200, response.text
 
     return credentials
+
+
+# Función que registra un usuario y da su cabecera Bearer.
+@pytest.fixture(scope="function")
+def auth_headers(client):
+    """Devuelve una función que registra un usuario y da su cabecera Bearer."""
+
+    def _for(email: str, password: str = "test123") -> dict[str, str]:
+        client.post("/register", json={"email": email, "password": password})
+        response = client.post("/token", data={"username": email, "password": password})
+        assert response.status_code == 200, response.text
+        return {"Authorization": f"Bearer {response.json()['access_token']}"}
+
+    return _for
+
+
+# Funcion que genera un nuevo proyecto a la base de datos a partir del token de auth
+# y regresa sus datos
+@pytest.fixture(scope="function")
+def make_project(client):
+    def _make(headers: dict[str, str], *, name: str = "Test Project") -> dict:
+        response = client.post("/projects", json={"name": name}, headers=headers)
+        assert response.status_code == 201, response.text
+        return response.json()
+
+    return _make

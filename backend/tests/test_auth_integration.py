@@ -2,7 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 
-@pytest.mark.integration()
+@pytest.mark.integration
 def test_register_new_user_and_return_data_without_secrets(client: TestClient):
 
     test_email = "test@example.com"
@@ -24,7 +24,7 @@ def test_register_new_user_and_return_data_without_secrets(client: TestClient):
     assert "hashed_password" not in body
 
 
-@pytest.mark.integration()
+@pytest.mark.integration
 def test_register_reject_creation_with_registered_email(client: TestClient):
     data = {"email": "repeat@example.com", "password": "repeated"}
 
@@ -35,7 +35,7 @@ def test_register_reject_creation_with_registered_email(client: TestClient):
     assert second_invalid_request.status_code == 409
 
 
-@pytest.mark.integration()
+@pytest.mark.integration
 def test_token_creation_with_valid_credentials(
     client: TestClient, registered_user: dict[str, str]
 ):
@@ -55,7 +55,7 @@ def test_token_creation_with_valid_credentials(
     assert json_data["token_type"] == "bearer"
 
 
-@pytest.mark.integration()
+@pytest.mark.integration
 def test_token_reject_with_invalid_password(
     client: TestClient, registered_user: dict[str, str]
 ):
@@ -72,7 +72,7 @@ def test_token_reject_with_invalid_password(
     assert response.headers["WWW-Authenticate"] == "Bearer"
 
 
-@pytest.mark.integration()
+@pytest.mark.integration
 def test_token_reject_with_invalid_email(client: TestClient):
     email = "invalid@example.com"
     password = "test123"
@@ -82,7 +82,7 @@ def test_token_reject_with_invalid_email(client: TestClient):
     assert response.status_code == 401
 
 
-@pytest.mark.integration()
+@pytest.mark.integration
 def test_get_current_user_rejects_with_no_token(client: TestClient):
 
     response = client.get("/users/me")
@@ -90,7 +90,7 @@ def test_get_current_user_rejects_with_no_token(client: TestClient):
     assert response.status_code == 401
 
 
-@pytest.mark.integration()
+@pytest.mark.integration
 def test_get_current_user_rejects_with_invalid_token(client: TestClient):
 
     token = "bad-token"
@@ -99,7 +99,7 @@ def test_get_current_user_rejects_with_invalid_token(client: TestClient):
     assert response.status_code == 401
 
 
-@pytest.mark.integration()
+@pytest.mark.integration
 def test_complete_auth_flow(client: TestClient):
     email = "test2@example.com"
     password = "test124"

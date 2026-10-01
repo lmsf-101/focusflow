@@ -2,6 +2,7 @@ from fastapi import Depends, FastAPI
 
 from focusflow_api.config import Settings, get_settings
 from focusflow_api.routers.auth import router as auth_router
+from focusflow_api.routers.projects import router as projects_router
 
 
 def create_app():
@@ -15,5 +16,6 @@ def create_app():
         }
 
     app.include_router(auth_router)
+    app.include_router(projects_router)
 
     return app
