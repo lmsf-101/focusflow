@@ -2,10 +2,11 @@ import jwt
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
+from sqlalchemy.sql import select
 
 from focusflow_api.config import get_settings
 from focusflow_api.db import get_db
-from focusflow_api.models import User
+from focusflow_api.models import Project, User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -23,20 +24,32 @@ def get_current_user(
             token, key=settings.secret_key, algorithms=[settings.algorithm]
         )
     except jwt.PyJWTError:
-        raise HTTPException(status_code=401, detail="Not permitted", headers=headers)
+        raise HTTPException(status_code=401, detail="Unauthorized", headers=headers)
     else:
         sub = data.get("sub")
 
         if not (sub):
-            raise HTTPException(
-                status_code=401, detail="Sub not found", headers=headers
-            )
+            raise HTTPException(status_code=401, detail="Unauthorized", headers=headers)
 
         user = db.get(User, int(sub))
 
         if not user:
-            raise HTTPException(
-                status_code=401, detail="User does not exist", headers=headers
-            )
+            raise HTTPException(status_code=401, detail="Unauthorized", headers=headers)
 
         return user
+
+
+def get_owned_project(
+    project_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> Project:
+
+    stmt = select(Project).where(Project.id == project_id, Project.owner_id == user.id)
+
+    project = db.execute(stmt).scalar_one_or_none()
+
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    return project
