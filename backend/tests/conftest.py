@@ -133,3 +133,36 @@ def make_category(client):
         return response.json()
 
     return _make
+
+
+_OMIT = object()
+
+
+# Funcion que genera una nueva tarea a partir del token de auth y regresa sus datos.
+# Las claves con _OMIT no se mandan en el body
+@pytest.fixture(scope="function")
+def make_task(client):
+    def _make(
+        headers: dict[str, str],
+        *,
+        title: str = "Test Task",
+        priority: str = "low",
+        status=_OMIT,
+        project_id=_OMIT,
+        category_id=_OMIT,
+    ) -> dict:
+        body = {"title": title, "priority": priority}
+
+        for key, value in (
+            ("status", status),
+            ("project_id", project_id),
+            ("category_id", category_id),
+        ):
+            if value is not _OMIT:
+                body[key] = value
+
+        response = client.post("/tasks", json=body, headers=headers)
+        assert response.status_code == 201, response.text
+        return response.json()
+
+    return _make

@@ -6,6 +6,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from focusflow_api.db import Base
 
+MAX_TASK_TITLE_LENGTH = 100
+
 task_tag = Table(
     "task_tag",
     Base.metadata,
@@ -76,7 +78,7 @@ class Tag(Base):
 class Task(Base):
     __tablename__ = "task"
     id: Mapped[int] = mapped_column(primary_key=True)
-    title: Mapped[str] = mapped_column(String(100))
+    title: Mapped[str] = mapped_column(String(MAX_TASK_TITLE_LENGTH))
 
     owner_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
     owner: Mapped["User"] = relationship(back_populates="tasks")
