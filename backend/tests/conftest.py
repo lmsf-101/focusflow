@@ -121,3 +121,15 @@ def make_project(client):
         return response.json()
 
     return _make
+
+
+# Funcion que genera una nueva categoria  a la base de datos a partir del token de auth
+# y regresa sus datos
+@pytest.fixture(scope="function")
+def make_category(client):
+    def _make(headers: dict[str, str], *, name: str = "Test Category") -> dict:
+        response = client.post("/categories", json={"name": name}, headers=headers)
+        assert response.status_code == 201, response.text
+        return response.json()
+
+    return _make
