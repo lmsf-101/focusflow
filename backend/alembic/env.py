@@ -1,5 +1,7 @@
 from logging.config import fileConfig
 
+# Registrar modelos en Base.metadata
+import focusflow_api.models  # noqa: F401
 from alembic import context
 from focusflow_api.db import Base, engine
 

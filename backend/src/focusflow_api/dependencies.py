@@ -6,7 +6,7 @@ from sqlalchemy.sql import select
 
 from focusflow_api.config import get_settings
 from focusflow_api.db import get_db
-from focusflow_api.models import Project, User
+from focusflow_api.models import Category, Project, User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -53,3 +53,21 @@ def get_owned_project(
         raise HTTPException(status_code=404, detail="Project not found")
 
     return project
+
+
+def get_owned_category(
+    category_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> Category:
+
+    stmt = select(Category).where(
+        Category.id == category_id, Category.owner_id == user.id
+    )
+
+    category = db.execute(stmt).scalar_one_or_none()
+
+    if not category:
+        raise HTTPException(status_code=404, detail="Category not found")
+
+    return category
