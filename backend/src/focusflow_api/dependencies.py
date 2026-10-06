@@ -6,7 +6,7 @@ from sqlalchemy.sql import select
 
 from focusflow_api.config import get_settings
 from focusflow_api.db import get_db
-from focusflow_api.models import Category, Project, Task, User
+from focusflow_api.models import Category, Project, Tag, Task, User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -84,6 +84,12 @@ def get_owned_task(
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     return task
+
+
+def get_owned_tag(
+    tag_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)
+) -> Tag:
+    return get_owned_model_or_404(db, Tag, tag_id, user.id)
 
 
 def get_owned_model_or_404[T](
