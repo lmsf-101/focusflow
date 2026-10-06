@@ -1,4 +1,6 @@
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from typing import Annotated
+
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, StringConstraints
 
 from focusflow_api.models import MAX_TASK_TITLE_LENGTH, TaskPriority, TaskStatus
 
@@ -78,3 +80,17 @@ class TaskUpdate(BaseModel):
 
     project_id: int | None = None
     category_id: int | None = None
+
+
+class TagCreate(BaseModel):
+    name: Annotated[
+        str,
+        StringConstraints(strip_whitespace=True, to_lower=True, min_length=1),
+    ]
+
+
+class TagRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str

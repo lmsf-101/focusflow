@@ -135,6 +135,17 @@ def make_category(client):
     return _make
 
 
+# Funcion que genera una nueva etiqueta a partir del token de auth y regresa sus datos.
+@pytest.fixture(scope="function")
+def make_tag(client):
+    def _make(headers: dict[str, str], *, name: str = "example-tag") -> dict:
+        response = client.post("/tags", json={"name": name}, headers=headers)
+        assert response.status_code == 201, response.text
+        return response.json()
+
+    return _make
+
+
 _OMIT = object()
 
 
