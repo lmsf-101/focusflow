@@ -1,6 +1,13 @@
 from enum import Enum
 
-from sqlalchemy import Column, ForeignKey, String, Table
+from sqlalchemy import (
+    CheckConstraint,
+    Column,
+    ForeignKey,
+    String,
+    Table,
+    UniqueConstraint,
+)
 from sqlalchemy import Enum as sqlEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -72,6 +79,10 @@ class Tag(Base):
     owner: Mapped["User"] = relationship(back_populates="tags")
     tasks: Mapped[list["Task"]] = relationship(
         secondary=task_tag, back_populates="tags"
+    )
+    __table_args__ = (
+        UniqueConstraint("owner_id", "name", name="uq_tag_owner_id_name"),
+        CheckConstraint("name = lower(name)", name="ck_tag_name_lowercase"),
     )
 
 
