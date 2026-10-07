@@ -161,6 +161,7 @@ def make_task(client):
         status=_OMIT,
         project_id=_OMIT,
         category_id=_OMIT,
+        tag_ids=_OMIT,
     ) -> dict:
         body = {"title": title, "priority": priority}
 
@@ -168,6 +169,7 @@ def make_task(client):
             ("status", status),
             ("project_id", project_id),
             ("category_id", category_id),
+            ("tag_ids", tag_ids),
         ):
             if value is not _OMIT:
                 body[key] = value
