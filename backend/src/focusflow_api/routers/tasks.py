@@ -6,6 +6,7 @@ from focusflow_api.db import get_db
 from focusflow_api.dependencies import (
     get_current_user,
     get_owned_model_or_404,
+    get_owned_tags_or_404,
     get_owned_task,
 )
 from focusflow_api.models import Category, Project, Task, User
@@ -27,6 +28,8 @@ def create_task(
     if body.category_id is not None:
         get_owned_model_or_404(db, Category, body.category_id, user.id)
 
+    user_tags = get_owned_tags_or_404(db, body.tag_ids, user.id)
+
     new_task = Task(
         title=body.title,
         owner_id=user.id,
@@ -34,6 +37,7 @@ def create_task(
         status=body.status,
         project_id=body.project_id,
         category_id=body.category_id,
+        tags=user_tags,
     )
 
     db.add(new_task)
@@ -76,6 +80,11 @@ def update_task(
         get_owned_model_or_404(db, Project, data["project_id"], user.id)
     if "category_id" in data and data["category_id"] is not None:
         get_owned_model_or_404(db, Category, data["category_id"], user.id)
+
+    if "tag_ids" in data:
+        user_tags = get_owned_tags_or_404(db, data["tag_ids"], user.id)
+        data.pop("tag_ids")
+        task.tags = user_tags
 
     for key, value in data.items():
         setattr(task, key, value)

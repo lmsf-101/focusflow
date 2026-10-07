@@ -325,3 +325,132 @@ def test_create_task_title_length_limits(
     )
 
     assert response.status_code == expected
+
+
+# Revisar que dos etiquetas de un usuario es asignado a una
+# tarea de forma correcta
+@pytest.mark.integration
+def test_create_task_with_own_tags_assigns_them(
+    client: TestClient, auth_headers, make_tag, make_task
+):
+    john = auth_headers("john@example.com")
+
+    tag_A_response = make_tag(john, name="Tag A")
+    tag_B_response = make_tag(john, name="Tag B")
+
+    new_task_with_tag_A_B_response = make_task(
+        john,
+        tag_ids=[
+            tag_A_response["id"],
+            tag_B_response["id"],
+        ],
+    )
+
+    assert tag_A_response in new_task_with_tag_A_B_response["tags"]
+    assert tag_B_response in new_task_with_tag_A_B_response["tags"]
+
+    assert {tag["id"] for tag in new_task_with_tag_A_B_response["tags"]} == {
+        tag_A_response["id"],
+        tag_B_response["id"],
+    }
+
+
+# Rechazar la creacion de una tarea si la etiqueta enviada no es del usuario
+@pytest.mark.integration
+def test_create_task_with_foreign_tag_is_rejected(
+    client: TestClient, auth_headers, make_tag
+):
+
+    john = auth_headers("john@example.com")
+    jane = auth_headers("jane@example.com")
+
+    jane_tag_id = make_tag(jane)["id"]
+
+    response = client.post(
+        "/tasks",
+        json={"title": "My task", "priority": "low", "tag_ids": [jane_tag_id]},
+        headers=john,
+    )
+
+    assert response.status_code == 404
+    assert client.get("/tasks", headers=john).json() == []
+
+
+# Rechazar la creacion de una tarea si al menos una de las etiquetas
+# enviadas no le corresponde al usuario
+@pytest.mark.integration
+def test_create_task_with_own_and_foreign_tag_is_rejected(
+    client: TestClient, auth_headers, make_tag
+):
+
+    john = auth_headers("john@example.com")
+    jane = auth_headers("jane@example.com")
+
+    john_tag_id = make_tag(john)["id"]
+    jane_tag_id = make_tag(jane)["id"]
+
+    response = client.post(
+        "/tasks",
+        json={
+            "title": "My task",
+            "priority": "medium",
+            "tag_ids": [john_tag_id, jane_tag_id],
+        },
+        headers=john,
+    )
+
+    assert response.status_code == 404
+    assert client.get("/tasks", headers=john).json() == []
+
+
+# Rechazar la actualizacion de una tarea si se asigna una etiqueta que no sea del usuario
+@pytest.mark.integration
+def test_update_task_with_foreign_tag_is_rejected(
+    client: TestClient, auth_headers, make_task, make_tag
+):
+    john = auth_headers("john@example.com")
+    jane = auth_headers("jane@example.com")
+
+    john_tag_id = make_tag(john)["id"]
+    john_task = make_task(john, tag_ids=[john_tag_id])
+
+    jane_tag_id = make_tag(jane)["id"]
+
+    response = client.patch(
+        f"/tasks/{john_task['id']}",
+        json={"tag_ids": [jane_tag_id]},
+        headers=john,
+    )
+
+    assert response.status_code == 404
+
+    john_tags = client.get(f"/tasks/{john_task['id']}", headers=john).json()["tags"]
+
+    assert {tag["id"] for tag in john_tags} == {john_tag_id}
+
+
+# Verificar que PATCH con una lista de etiquetas propias reemplaza
+# las que la tarea tenia (conserva la comun, quita la ausente, agrega la nueva)
+@pytest.mark.integration
+def test_update_task_with_own_tags_replaces_them(
+    client: TestClient, auth_headers, make_task, make_tag
+):
+    john = auth_headers("john@example.com")
+
+    tag_a_id = make_tag(john, name="tag-a")["id"]
+    tag_b_id = make_tag(john, name="tag-b")["id"]
+    tag_c_id = make_tag(john, name="tag-c")["id"]
+
+    task = make_task(john, tag_ids=[tag_a_id, tag_b_id])
+
+    response = client.patch(
+        f"/tasks/{task['id']}",
+        json={"tag_ids": [tag_b_id, tag_c_id]},
+        headers=john,
+    )
+
+    assert response.status_code == 200
+
+    john_tags = client.get(f"/tasks/{task['id']}", headers=john).json()["tags"]
+
+    assert {tag["id"] for tag in john_tags} == {tag_b_id, tag_c_id}

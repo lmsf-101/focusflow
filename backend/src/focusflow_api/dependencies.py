@@ -103,3 +103,17 @@ def get_owned_model_or_404[T](
     if not result:
         raise HTTPException(status_code=404, detail=f"{model.__name__} not found")
     return result
+
+
+def get_owned_tags_or_404(db: Session, tag_ids: list[int], user_id: int) -> list[Tag]:
+
+    if not tag_ids:
+        return []
+
+    user_tags_stmt = select(Tag).where(Tag.owner_id == user_id, Tag.id.in_(tag_ids))
+    user_tags_list = db.execute(user_tags_stmt).scalars().all()
+
+    if set(tag_ids) != {tag.id for tag in user_tags_list}:
+        raise HTTPException(status_code=404, detail="One or more tags was not found.")
+
+    return user_tags_list
