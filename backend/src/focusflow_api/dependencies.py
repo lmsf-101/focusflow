@@ -44,15 +44,7 @@ def get_owned_project(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> Project:
-
-    stmt = select(Project).where(Project.id == project_id, Project.owner_id == user.id)
-
-    project = db.execute(stmt).scalar_one_or_none()
-
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-
-    return project
+    return get_owned_model_or_404(db, Project, project_id, user.id)
 
 
 def get_owned_category(
@@ -60,30 +52,13 @@ def get_owned_category(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> Category:
-
-    stmt = select(Category).where(
-        Category.id == category_id, Category.owner_id == user.id
-    )
-
-    category = db.execute(stmt).scalar_one_or_none()
-
-    if not category:
-        raise HTTPException(status_code=404, detail="Category not found")
-
-    return category
+    return get_owned_model_or_404(db, Category, category_id, user.id)
 
 
 def get_owned_task(
     task_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)
 ) -> Task:
-
-    stmt = select(Task).where(Task.id == task_id, Task.owner_id == user.id)
-
-    task = db.execute(stmt).scalar_one_or_none()
-
-    if not task:
-        raise HTTPException(status_code=404, detail="Task not found")
-    return task
+    return get_owned_model_or_404(db, Task, task_id, user.id)
 
 
 def get_owned_tag(
