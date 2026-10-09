@@ -454,3 +454,68 @@ def test_update_task_with_own_tags_replaces_them(
     john_tags = client.get(f"/tasks/{task['id']}", headers=john).json()["tags"]
 
     assert {tag["id"] for tag in john_tags} == {tag_b_id, tag_c_id}
+
+
+# Actualizacion de tarea sin asignar etiquetas mantiene
+# intacto la lista de etiquetas previamente asignada
+@pytest.mark.integration
+def test_update_task_without_tag_ids_key_leaves_tags_untouched(
+    client: TestClient, auth_headers, make_tag, make_task
+):
+    john = auth_headers("john@example.com")
+    tag_name = "John Tag"
+
+    john_tag_id = make_tag(john, name=tag_name)["id"]
+
+    john_task = make_task(john, tag_ids=[john_tag_id])
+    new_task_title = "New Title"
+
+    response = client.patch(
+        f"/tasks/{john_task['id']}", headers=john, json={"title": new_task_title}
+    )
+
+    assert response.status_code == 200
+    assert response.json()["title"] == new_task_title
+    assert {john_tag_id} == {tag["id"] for tag in response.json()["tags"]}
+
+
+# Actualizacion de tarea con lista vacia de etiquetas
+# elimina todas las etiquetas asignadas a la tarea
+@pytest.mark.integration
+def test_update_task_with_empty_tag_ids_list_removes_tags(
+    client: TestClient, auth_headers, make_tag, make_task
+):
+    john = auth_headers("john@example.com")
+    tag_name = "John Tag"
+
+    john_tag_id = make_tag(john, name=tag_name)["id"]
+
+    john_task = make_task(john, tag_ids=[john_tag_id])
+    new_task_title = "New Title"
+
+    response = client.patch(
+        f"/tasks/{john_task['id']}",
+        headers=john,
+        json={"title": new_task_title, "tag_ids": []},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["title"] == new_task_title
+    assert len(response.json()["tags"]) == 0
+
+
+# Actualizacion de tarea con una lista duplicada de etiquetas
+# solamente conserva una de ellas
+@pytest.mark.integration
+def test_update_task_with_duplicate_tag_ids_only_conserves_one(
+    auth_headers, make_tag, make_task
+):
+    john = auth_headers("john@example.com")
+    tag_name = "John Tag"
+
+    john_tag = make_tag(john, name=tag_name)
+
+    task_creation_json = make_task(john, tag_ids=[john_tag["id"], john_tag["id"]])
+
+    assert len(task_creation_json["tags"]) == 1
+    assert john_tag in task_creation_json["tags"]
