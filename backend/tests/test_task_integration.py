@@ -504,10 +504,10 @@ def test_update_task_with_empty_tag_ids_list_removes_tags(
     assert len(response.json()["tags"]) == 0
 
 
-# Actualizacion de tarea con una lista duplicada de etiquetas
+# Creacion de tarea con una lista duplicada de etiquetas
 # solamente conserva una de ellas
 @pytest.mark.integration
-def test_update_task_with_duplicate_tag_ids_only_conserves_one(
+def test_create_task_with_duplicate_tag_ids_only_conserves_one(
     auth_headers, make_tag, make_task
 ):
     john = auth_headers("john@example.com")

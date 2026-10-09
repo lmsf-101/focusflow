@@ -125,13 +125,13 @@ def test_delete_category_removes_it_for_owner(
     assert delete_response.status_code == 204
     assert delete_response.content == b""
 
-    get_project_response = client.get(f"/categories/{category_id}", headers=john)
+    get_category_response = client.get(f"/categories/{category_id}", headers=john)
 
-    assert get_project_response.status_code == 404
+    assert get_category_response.status_code == 404
 
-    get_projects_response = client.get("/categories", headers=john)
+    get_categories_response = client.get("/categories", headers=john)
 
-    assert get_projects_response.json() == []
+    assert get_categories_response.json() == []
 
 
 # Verificar que GET categories no se procese sin cabecera
@@ -180,7 +180,7 @@ def test_get_categories_returns_empty_for_another_user(
 
 # Verificar que GET categories/{category_id} sea rechazado si el usuario no es dueño de ella
 @pytest.mark.integration
-def test_get_category_by_id_is_reject_for_non_owner(client: TestClient, auth_headers):
+def test_get_category_by_id_is_rejected_for_non_owner(client: TestClient, auth_headers):
 
     john = auth_headers("john@example.com")
     jane = auth_headers("jane@example.com")
@@ -222,10 +222,10 @@ def test_patch_category_by_id_does_nothing_for_non_owner(
     assert response.status_code == 404
 
     # Validar que no hubo cambio de nombre a la categoria:
-    get_project_response = client.get(f"/categories/{category_id}", headers=john)
+    get_category_response = client.get(f"/categories/{category_id}", headers=john)
 
-    assert get_project_response.status_code == 200
-    assert get_project_response.json()["name"] == category_name
+    assert get_category_response.status_code == 200
+    assert get_category_response.json()["name"] == category_name
 
 
 # Verificar que DELETE categories/{category_id} NO borra la categoria si el usuario no es dueño de ella
@@ -250,8 +250,8 @@ def test_delete_category_by_id_does_not_delete_for_non_owner(
     assert response.status_code == 404
 
     # Validar que no se borró la categoria:
-    get_project_response = client.get(f"/categories/{category_id}", headers=john)
+    get_category_response = client.get(f"/categories/{category_id}", headers=john)
 
-    assert get_project_response.status_code == 200
-    assert isinstance(get_project_response.json()["id"], int)
-    assert get_project_response.json()["name"] == category_name
+    assert get_category_response.status_code == 200
+    assert isinstance(get_category_response.json()["id"], int)
+    assert get_category_response.json()["name"] == category_name
