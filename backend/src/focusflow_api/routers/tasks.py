@@ -82,8 +82,7 @@ def update_task(
         get_owned_model_or_404(db, Category, data["category_id"], user.id)
 
     if "tag_ids" in data:
-        user_tags = get_owned_tags_or_404(db, data["tag_ids"], user.id)
-        data.pop("tag_ids")
+        user_tags = get_owned_tags_or_404(db, data.pop("tag_ids"), user.id)
         task.tags = user_tags
 
     for key, value in data.items():
