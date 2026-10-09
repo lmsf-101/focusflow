@@ -70,6 +70,8 @@ class Category(Base):
 
     tasks: Mapped[list["Task"]] = relationship(back_populates="category")
 
+    test_column_experiment: Mapped[str] = mapped_column(nullable=True)
+
 
 class Tag(Base):
     __tablename__ = "tag"
