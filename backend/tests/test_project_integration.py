@@ -165,7 +165,7 @@ def test_get_projects_returns_list_for_owner(client: TestClient, auth_headers):
 
 # Verificar solicitud GET a projects que regresa una lista vacia para usuario ajeno
 @pytest.mark.integration
-def test_get_project_returns_empty_for_another_user(client: TestClient, auth_headers):
+def test_get_projects_returns_empty_for_another_user(client: TestClient, auth_headers):
     john = auth_headers("john@example.com")
     jane = auth_headers("jane@example.com")
 
@@ -181,7 +181,7 @@ def test_get_project_returns_empty_for_another_user(client: TestClient, auth_hea
 
 # Verificar que GET project/{project_id} sea rechazado si el usuario no es dueño de ella
 @pytest.mark.integration
-def test_get_project_by_id_is_reject_for_non_owner(client: TestClient, auth_headers):
+def test_get_project_by_id_is_rejected_for_non_owner(client: TestClient, auth_headers):
 
     john = auth_headers("john@example.com")
     jane = auth_headers("jane@example.com")
@@ -225,7 +225,7 @@ def test_patch_project_by_id_does_nothing_for_non_owner(
     assert get_project_response.json()["name"] == project_name
 
 
-# Verificar que DELETE project/{project_id} borré el proyecto si el usuario no es dueño de ella
+# Verificar que DELETE project/{project_id} NO borra el proyecto si el usuario no es dueño de ella
 @pytest.mark.integration
 def test_delete_project_by_id_does_not_delete_for_non_owner(
     client: TestClient, auth_headers
@@ -244,7 +244,7 @@ def test_delete_project_by_id_does_not_delete_for_non_owner(
 
     assert response.status_code == 404
 
-    # Validar que no hubo cambio de nombre al proyecto:
+    # Validar que no se borró el proyecto:
     get_project_response = client.get(f"/projects/{project_id}", headers=john)
 
     assert get_project_response.status_code == 200
