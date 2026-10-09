@@ -43,6 +43,8 @@ jobs:
           run: uv run pytest
         - name: Test database migrations (Alembic)
           run: uv run --locked alembic upgrade head
+        - name: Verify if models match the migrated schema
+          run: uv run --locked alembic check
         - name: Verify downgrade migrations
           run: uv run --locked alembic downgrade base
         - name: Verify migration upgrades
