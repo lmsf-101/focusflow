@@ -1,47 +1,88 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
 import { TaskList, type Task } from './components/TaskList.tsx'
 
-function App() {
-  const [titulo, setTitulo] = useState('')
+const TASKS_URL = "http://localhost:8000/tasks";
 
-  const [tareas, setTareas] = useState<Task[]>([
+function App() {
+  const [newTitle, setNewTitle] = useState('')
+
+  const [tasks, setTasks] = useState<Task[]>([
     { id: 1, title: 'Test 1', done: false },
     { id: 2, title: 'Test 2', done: true },
     { id: 3, title: 'Test 3', done: false },
   ])
 
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string|null>(null);
+
+  useEffect(() => {
+    async function loadTasks() {
+
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(TASKS_URL, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        })
+
+      if (!response.ok) {
+        const body = await response.json();
+        throw new Error(`${response.status} - ${response.statusText}`, {cause: body } )
+      }
+
+      setTasks(await response.json());
+      } catch (err) {
+          if (err instanceof Error) {
+            setError(err.message)
+          } else {
+            setError("Error desconocido.")
+          }
+      } finally {
+        setIsLoading(false);
+      }
+    }
+      loadTasks()
+  }, [])
+
   function toggleTask(id: number) {
-    const copiaTareas = tareas.map((tarea) =>
-      tarea.id === id ? { ...tarea, done: !tarea.done } : tarea,
+    const updatedTasks = tasks.map((task) =>
+      task.id === id ? { ...task, done: !task.done } : task,
     )
 
-    setTareas(copiaTareas)
+    setTasks(updatedTasks)
   }
 
-  function agregarTask() {
-    if (titulo.trim().length === 0) {
-      setTitulo('')
+  function addTask() {
+    if (newTitle.trim().length === 0) {
+      setNewTitle('')
       return
     }
 
-    const nuevaTarea = {
+    const newTask = {
       id: Date.now(),
-      title: titulo.trim(),
+      title: newTitle.trim(),
       done: false,
     }
 
-    setTareas([...tareas, nuevaTarea])
+    setTasks([...tasks, newTask])
 
-    setTitulo('')
+    setNewTitle('')
   }
 
   return (
     <>
-      <input value={titulo} onChange={(e) => setTitulo(e.target.value)} />
+      <input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} />
+      <button onClick={() => addTask()}>Agregar Tarea</button>
 
-      <button onClick={() => agregarTask()}>Agregar Tarea</button>
-      <TaskList tasks={tareas} onToggle={toggleTask} />
+      {isLoading ? (
+        <p>Cargando...</p>
+      ): error !== null ? (
+        <p>Ocurrio un error al recuperar tareas : {error}</p>
+      ): (
+      <TaskList tasks={tasks} onToggle={toggleTask} />
+      )}
     </>
   )
 }
