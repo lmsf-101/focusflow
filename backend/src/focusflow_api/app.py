@@ -1,4 +1,5 @@
 from fastapi import Depends, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from focusflow_api.config import Settings, get_settings
 from focusflow_api.routers.auth import router as auth_router
@@ -17,6 +18,13 @@ def create_app():
             "status": "ok",
             "env": settings.app_env,
         }
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_methods=["*"],
+        allow_headers=["Authorization"],
+        allow_origins=get_settings().cors_origins,
+    )
 
     app.include_router(auth_router)
     app.include_router(projects_router)

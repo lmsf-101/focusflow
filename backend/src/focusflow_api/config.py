@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     postgres_host: str = "localhost"
     postgres_port: int = 5432
 
+    cors_origins: list[str] = []
+
     secret_key: str
     algorithm: str = "HS256"
     access_token_expire_minutes: int
