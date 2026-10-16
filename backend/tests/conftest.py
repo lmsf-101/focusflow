@@ -12,6 +12,8 @@ os.environ.setdefault("POSTGRES_DB", "test")
 os.environ.setdefault("SECRET_KEY", "test")
 os.environ.setdefault("ACCESS_TOKEN_EXPIRE_MINUTES", "5")
 
+os.environ["CORS_ORIGINS"] = '["http://localhost:5173"]'
+
 import focusflow_api.models  # noqa: F401
 from focusflow_api.app import create_app
 from focusflow_api.config import get_settings
