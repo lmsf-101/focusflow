@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { Link, useNavigate } from "react-router"
 
 async function login(username: string, password: string) {
     const params = {
@@ -23,10 +24,11 @@ async function login(username: string, password: string) {
 
 export function LoginForm() {
 
-    // useState / hooks aqui
     const [username, setUsername] = useState<string>("")
     const [password, setPassword] = useState<string>("")
     const [error, setError] = useState<string|null>(null)
+
+    const navigate = useNavigate()
 
     return (
       <>
@@ -36,11 +38,12 @@ export function LoginForm() {
               const token = await login(username, password)
               localStorage.setItem('token', token);
               setError(null)
+              navigate("/tasks", {replace: true})
             } catch (err) {
               if (err instanceof Error)
                 setError(err.message)
               else
-                setError("Ocurrio un error. Intenta más tarde")
+                setError("Error desconocido. Intenta más tarde")
             }
           }}>
           <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} />
@@ -49,6 +52,8 @@ export function LoginForm() {
 
           <button type="submit">Submit</button>
         </form>
+
+        <Link to="/register">Crear una cuenta</Link>
 
         {error !== null ? <p>Ocurrio un error : {error}</p> : <></>}
       </>

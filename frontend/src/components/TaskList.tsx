@@ -1,8 +1,35 @@
+
+const StatusValues = [
+  "pending",
+  "in_progress",
+  "done"
+] as const;
+
+const PriorityValues = [
+  "urgent",
+  "high",
+  "medium",
+  "low"
+] as const;
+
+type StatusType = typeof StatusValues[number];
+type PriorityType = typeof PriorityValues[number];
+
 export type Task = {
   id: number
   title: string
-  done: boolean
+  priority: PriorityType
+  status: StatusType
+  project_id: number | null
+  category_id: number | null
+  tags: Array<Tag>
 }
+
+type Tag = {
+  id: number
+  name: string
+}
+
 
 type TaskItemProps = {
   task: Task
@@ -12,9 +39,9 @@ type TaskItemProps = {
 function TaskItem({ task, onToggle }: TaskItemProps) {
   return (
     <li>
-      {task.done ? <s>{task.title}</s> : task.title}
+      {task.status === "done" ? <s>{task.title}</s> : task.title}
       <button onClick={() => onToggle(task.id)}>
-        {task.done ? 'Deshacer' : 'Marcar'}
+        {task.status === "done" ? 'Deshacer' : 'Marcar'}
       </button>
     </li>
   )
