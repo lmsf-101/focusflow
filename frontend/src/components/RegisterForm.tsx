@@ -17,7 +17,7 @@ async function register(email: string, password: string) {
 
     if (!response.ok) {
         const error_json = await response.json()
-        throw new Error(`Register error: ${response.status} - ${response.statusText}`, {cause: error_json })
+        throw new Error(`Register error: ${response.status} - ${response.statusText} - ${error_json.detail}`, {cause: error_json })
     }
 }
 
@@ -31,12 +31,12 @@ export function RegisterForm() {
 
     return (
       <>
-        <form onSubmit={async (e) => {
+        <form className="auth-form" onSubmit={async (e) => {
             e.preventDefault()
             try {
               await register(email, password)
               setError(null)
-              navigate("/login", {replace: true})
+              navigate("/login", {replace: true, state: "Usuario creado exitosamente"})
             } catch (err) {
               if (err instanceof Error)
                 setError(err.message)
