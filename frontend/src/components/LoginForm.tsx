@@ -1,6 +1,8 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { Link, useLocation, useNavigate } from "react-router"
+import { useAuth } from "../auth/AuthContext"
 
-async function login(username: string, password: string) {
+async function requestToken(username: string, password: string) {
     const params = {
       "username": username,
       "password": password
@@ -23,24 +25,37 @@ async function login(username: string, password: string) {
 
 export function LoginForm() {
 
-    // useState / hooks aqui
+    const { login } = useAuth()
     const [username, setUsername] = useState<string>("")
     const [password, setPassword] = useState<string>("")
     const [error, setError] = useState<string|null>(null)
 
+    const navigate = useNavigate()
+    const location = useLocation()
+
+    const [notice, setNotice ] = useState<string|null>(location.state)
+
+    useEffect(() => {
+        if (location.state) {
+          navigate(location.pathname, {replace: true})
+        }
+    }, [location, navigate])
+
     return (
       <>
-        <form onSubmit={async (e) => {
+        <form className="auth-form" onSubmit={async (e) => {
             e.preventDefault()
             try {
-              const token = await login(username, password)
-              localStorage.setItem('token', token);
+              setNotice(null)
+              const token = await requestToken(username, password)
+              login(token)
               setError(null)
+              navigate("/tasks", {replace: true})
             } catch (err) {
               if (err instanceof Error)
                 setError(err.message)
               else
-                setError("Ocurrio un error. Intenta más tarde")
+                setError("Error desconocido. Intenta más tarde")
             }
           }}>
           <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} />
@@ -50,7 +65,11 @@ export function LoginForm() {
           <button type="submit">Submit</button>
         </form>
 
+        <Link to="/register">Crear una cuenta</Link>
+
         {error !== null ? <p>Ocurrio un error : {error}</p> : <></>}
+
+        {notice ? <p>{notice}</p> : <></>}
       </>
     )
 }
