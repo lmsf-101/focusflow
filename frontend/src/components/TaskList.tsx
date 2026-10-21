@@ -1,19 +1,18 @@
-
 const StatusValues = [
   "pending",
   "in_progress",
   "done"
 ] as const;
 
-const PriorityValues = [
+export const PriorityValues = [
   "urgent",
   "high",
   "medium",
   "low"
 ] as const;
 
-type StatusType = typeof StatusValues[number];
-type PriorityType = typeof PriorityValues[number];
+export type StatusType = typeof StatusValues[number];
+export type PriorityType = typeof PriorityValues[number];
 
 export type Task = {
   id: number
@@ -25,7 +24,7 @@ export type Task = {
   tags: Array<Tag>
 }
 
-type Tag = {
+export type Tag = {
   id: number
   name: string
 }
@@ -33,16 +32,20 @@ type Tag = {
 
 type TaskItemProps = {
   task: Task
-  onToggle: (id: number) => void
+  onToggle: (task: Task) => void
+  onDelete: (id: number) => void
 }
 
-function TaskItem({ task, onToggle }: TaskItemProps) {
+function TaskItem({ task, onToggle, onDelete }: TaskItemProps) {
   return (
-    <li>
-      {task.status === "done" ? <s>{task.title}</s> : task.title}
-      <button onClick={() => onToggle(task.id)}>
+    <li className="task-item">
+      <span className="task-title">
+        {task.status === "done" ? <s>{task.title}</s> : <p>{task.title}</p>}
+      </span>
+      <button onClick={() => onToggle(task)}>
         {task.status === "done" ? 'Deshacer' : 'Marcar'}
       </button>
+      <button onClick={() => onDelete(task.id)}>Eliminar Tarea</button>
     </li>
   )
 }
@@ -50,14 +53,17 @@ function TaskItem({ task, onToggle }: TaskItemProps) {
 export function TaskList({
   tasks,
   onToggle,
+  onDelete,
 }: {
   tasks: Task[]
-  onToggle: (id: number) => void
+  onToggle: (task: Task) => void
+  onDelete: (id: number) => void
 }) {
+
   return (
-    <ul>
+    <ul className="task-list">
       {tasks.map((task) => (
-        <TaskItem key={task.id} task={task} onToggle={onToggle} />
+        <TaskItem key={task.id} task={task} onToggle={onToggle} onDelete={onDelete} />
       ))}
     </ul>
   )
