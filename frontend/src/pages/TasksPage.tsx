@@ -4,8 +4,9 @@ import { type PriorityType, TaskList, type Task, PriorityValues } from '../compo
 import { useAuth } from '../auth/AuthContext.tsx';
 import { createTask, deleteTask, updateTask } from '../api/tasks.ts';
 import { ApiError } from '../api/error.ts';
+import { API_URL } from '../api/config.ts';
 
-const TASKS_URL = "http://localhost:8000/tasks";
+const TASKS_URL = `${API_URL}/tasks`;
 
 function TasksPage() {
   const [newTitle, setNewTitle] = useState('')

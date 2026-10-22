@@ -1,4 +1,5 @@
 import type { PriorityType, StatusType, Task } from "../components/TaskList";
+import { API_URL } from "./config";
 import { ApiError } from "./error";
 
 type TaskCreate = {
@@ -16,7 +17,7 @@ type TaskUpdate = {
 
 export async function createTask(token: string | null, task: TaskCreate): Promise<Task> {
 
-    const response = await fetch("http://localhost:8000/tasks", {
+    const response = await fetch(`${API_URL}/tasks`, {
         method: "POST",
         body: JSON.stringify(task),
         headers: {
@@ -35,7 +36,7 @@ export async function createTask(token: string | null, task: TaskCreate): Promis
 
 export async function deleteTask(token: string | null, task_id: number) {
 
-    const response = await fetch(`http://localhost:8000/tasks/${task_id}`, {
+    const response = await fetch(`${API_URL}/tasks/${task_id}`, {
         method: "DELETE",
         headers: {
             "Authorization": `Bearer ${token}`,
@@ -52,7 +53,7 @@ export async function deleteTask(token: string | null, task_id: number) {
 
 export async function updateTask(token: string | null, task_id: number, changes: TaskUpdate): Promise<Task> {
 
-    const response = await fetch(`http://localhost:8000/tasks/${task_id}`, {
+    const response = await fetch(`${API_URL}/tasks/${task_id}`, {
         method: "PATCH",
         body: JSON.stringify(changes),
         headers: {
