@@ -1,0 +1,57 @@
+databases:
+  - name: focusflow-db
+    plan: free
+    postgresMajorVersion: '16'
+    ipAllowList: []
+    region: 'ohio'
+
+services:
+  - name: backend
+    plan: free
+    type: web
+    region: 'ohio'
+    envVars:
+      - key: APP_ENV
+        value: 'production'
+      - key: POSTGRES_USER
+        fromDatabase:
+          name: focusflow-db
+          property: user
+      - key: POSTGRES_PASSWORD
+        fromDatabase:
+          name: focusflow-db
+          property: password
+      - key: POSTGRES_DB
+        fromDatabase:
+          name: focusflow-db
+          property: database
+      - key: POSTGRES_HOST
+        fromDatabase:
+          name: focusflow-db
+          property: host
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "25"
+      - key: CORS_ORIGINS
+        sync: false
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    dockerCommand: 'sh -c "alembic upgrade head && uvicorn focusflow_api.main:app --host 0.0.0.0 --port $PORT --no-access-log"'
+    healthCheckPath: /health
+    autoDeployTrigger: 'checksPass'
+
+  - name: frontend
+    type: web
+    runtime: static
+    buildCommand: 'cd frontend && npm ci && npm run build'
+    staticPublishPath: ./frontend/dist
+    envVars:
+      - key: VITE_API_URL
+        sync: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
