@@ -38,7 +38,7 @@ services:
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
-    dockerCommand: 'sh -c "alembic upgrade head && uvicorn focusflow_api.main:app --host 0.0.0.0 --port $PORT --no-access-log"'
+    dockerCommand: '/bin/sh -c alembic upgrade head && uvicorn focusflow_api.main:app --host 0.0.0.0 --port $PORT --no-access-log'
     healthCheckPath: /health
     autoDeployTrigger: 'checksPass'
 
