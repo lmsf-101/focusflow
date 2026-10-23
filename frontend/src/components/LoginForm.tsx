@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { Link, useLocation, useNavigate } from "react-router"
 import { useAuth } from "../auth/AuthContext"
+import { API_URL } from "../api/config"
 
 async function requestToken(username: string, password: string) {
     const params = {
@@ -9,7 +10,7 @@ async function requestToken(username: string, password: string) {
     }
     const searchParams = new URLSearchParams(params)
 
-    const response = await fetch('http://localhost:8000/token', {
+    const response = await fetch(`${API_URL}/token`, {
         method: 'POST',
         body: searchParams
     })
