@@ -36,3 +36,39 @@ jobs:
             fi
             sleep $POLL_INTERVAL
           done
+      - name: Run smoke-test with protected routes
+        env:
+          TEST_EMAIL: ${{ secrets.SMOKE_TEST_EMAIL }}
+          TEST_PASSWORD: ${{ secrets.SMOKE_TEST_PASSWORD }}
+        run: |
+          if TOKEN_RESPONSE=$(curl -X POST -s -f --max-time 60 "$BACKEND_URL"/token \
+            --data-urlencode "username=$TEST_EMAIL" \
+            --data-urlencode "password=$TEST_PASSWORD" \
+            --data-urlencode "grant_type=password"); then
+            if TOKEN=$(echo "$TOKEN_RESPONSE" | jq -e -r '.access_token'); then
+              if USER_RESPONSE=$(curl -s -f --max-time 15 "$BACKEND_URL"/users/me \
+                                  -H "Authorization: Bearer $TOKEN"); then
+                if BODY_EMAIL_ATTR=$(echo "$USER_RESPONSE" | jq -r '.email'); then
+
+                  if [[ "$BODY_EMAIL_ATTR" == "$TEST_EMAIL" ]]; then
+                    echo "Smoke test completed! Managed to access app with token"
+                    exit 0
+                  else
+                    echo "Smoke test failed. Retrieved email does not correspond with the test email"
+                    exit 1
+                  fi
+                else
+                  echo "Smoke test failed. Email attribute was not found"
+                fi
+              else
+                echo "Smoke test failed when trying to access user's details"
+                exit 1
+              fi
+            else
+              echo "Smoke test failed. Access token was not found"
+              exit 1
+            fi
+          else
+            echo "Smoke test failed when trying to retrieve token in $BACKEND_URL"
+            exit 1
+          fi
