@@ -1,0 +1,38 @@
+name: Deploy Render
+on:
+  push:
+    branches: [main]
+
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      BACKEND_URL: ${{ vars.RENDER_URL }}
+    steps:
+      - name: Wait for the new version to be available in Render
+        timeout-minutes: 8
+        run: |
+          if [ -z "$BACKEND_URL" ]; then
+            echo "BACKEND_URL is not defined. Please add the URL variable within the production environment"
+            exit 1
+          fi
+          POLL_INTERVAL=10
+          echo "Starting health check for $BACKEND_URL ..."
+          while true; do
+            if RESPONSE=$(curl -s -f --max-time 60 "$BACKEND_URL/health"); then
+              if RENDER_COMMIT=$(echo "$RESPONSE" | jq -r -e '.render_git_commit'); then
+                if [[ $RENDER_COMMIT == "$GITHUB_SHA" ]]; then
+                  echo "Success! The new version is available in Render"
+                  exit 0
+                else
+                  echo "Render is not synced with the new version. Retrying in $POLL_INTERVAL seconds..."
+                fi
+              else
+                echo "Render does not contain GIT_COMMIT data. Retrying in $POLL_INTERVAL seconds..."
+              fi
+            else
+              echo "Curl to backend failed. Retrying in $POLL_INTERVAL seconds..."
+            fi
+            sleep $POLL_INTERVAL
+          done
