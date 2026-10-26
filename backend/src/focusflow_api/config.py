@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int
 
+    render_git_commit: str | None = None
+
     @property
     def database_url(self) -> URL:
         return URL.create(

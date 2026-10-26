@@ -50,6 +50,7 @@ def create_app():
         return {
             "status": "ok",
             "env": settings.app_env,
+            "render_git_commit": settings.render_git_commit,
         }
 
     app.add_middleware(
