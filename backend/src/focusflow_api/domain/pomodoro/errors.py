@@ -2,7 +2,15 @@ class PomodoroError(Exception):
     pass
 
 
-class PomodoroCurveError(PomodoroError):
+class PomodoroValidationError(PomodoroError):
     def __init__(self, message: str, field: str) -> None:
-        self.field: str = field
         super().__init__(message)
+        self.field: str = field
+
+
+class PomodoroCurveError(PomodoroValidationError):
+    pass
+
+
+class PomodoroBreakError(PomodoroValidationError):
+    pass
