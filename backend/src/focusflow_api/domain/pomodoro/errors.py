@@ -14,3 +14,7 @@ class PomodoroCurveError(PomodoroValidationError):
 
 class PomodoroBreakError(PomodoroValidationError):
     pass
+
+
+class PomodoroPlanError(PomodoroError):
+    pass
