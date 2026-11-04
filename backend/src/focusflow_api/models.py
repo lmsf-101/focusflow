@@ -40,6 +40,12 @@ class TaskStatus(str, Enum):
     DONE = "done"
 
 
+class PomodoroMode(str, Enum):
+    CLASSIC = "classic"
+    INCREMENTAL = "incremental"
+    FLEXIBLE = "flexible"
+
+
 class User(Base):
     __tablename__ = "user"
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -108,4 +114,44 @@ class Task(Base):
 
     status: Mapped["TaskStatus"] = mapped_column(
         sqlEnum(TaskStatus, values_callable=enum_values)
+    )
+
+
+class PomodoroPreference(Base):
+    __tablename__ = "pomodoro_preference"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    owner_id: Mapped[int] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"))
+    project_id: Mapped[int | None] = mapped_column(
+        ForeignKey("project.id", ondelete="CASCADE")
+    )
+    category_id: Mapped[int | None] = mapped_column(
+        ForeignKey("category.id", ondelete="CASCADE")
+    )
+    mode: Mapped["PomodoroMode"] = mapped_column(
+        sqlEnum(PomodoroMode, values_callable=enum_values)
+    )
+    start_minutes: Mapped[int] = mapped_column()
+    num_of_rounds: Mapped[int] = mapped_column()
+    break_minutes: Mapped[int | None] = mapped_column()
+    growth: Mapped[int | None] = mapped_column()
+    cap_minutes: Mapped[int | None] = mapped_column()
+    rate: Mapped[float | None] = mapped_column()
+
+    __table_args__ = (
+        CheckConstraint(
+            "num_nonnulls(project_id, category_id) <= 1",
+            name="ck_pomodoro_preference_single_scope",
+        ),
+        CheckConstraint(
+            "mode <> 'classic' OR (break_minutes IS NOT NULL AND growth IS NULL AND cap_minutes IS NULL AND rate IS NULL)",
+            name="ck_pomodoro_preference_classic_parameters",
+        ),
+        CheckConstraint(
+            "mode <> 'incremental' OR (break_minutes IS NULL AND growth IS NOT NULL AND cap_minutes IS NOT NULL AND rate IS NULL)",
+            name="ck_pomodoro_preference_incremental_parameters",
+        ),
+        CheckConstraint(
+            "mode <> 'flexible' OR (break_minutes IS NULL AND growth IS NULL AND cap_minutes IS NOT NULL AND rate IS NOT NULL)",
+            name="ck_pomodoro_preference_flexible_parameters",
+        ),
     )
