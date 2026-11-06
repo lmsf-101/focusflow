@@ -14,6 +14,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from focusflow_api.db import Base
 
 MAX_TASK_TITLE_LENGTH = 100
+MAX_POMODORO_PRESET_NAME_LENGTH = 75
 
 task_tag = Table(
     "task_tag",
@@ -117,15 +118,16 @@ class Task(Base):
     )
 
 
-class PomodoroPreference(Base):
-    __tablename__ = "pomodoro_preference"
+class PomodoroPreset(Base):
+    __tablename__ = "pomodoro_preset"
     id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(length=MAX_POMODORO_PRESET_NAME_LENGTH))
     owner_id: Mapped[int] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"))
     project_id: Mapped[int | None] = mapped_column(
-        ForeignKey("project.id", ondelete="CASCADE")
+        ForeignKey("project.id", ondelete="SET NULL")
     )
     category_id: Mapped[int | None] = mapped_column(
-        ForeignKey("category.id", ondelete="CASCADE")
+        ForeignKey("category.id", ondelete="SET NULL")
     )
     mode: Mapped["PomodoroMode"] = mapped_column(
         sqlEnum(PomodoroMode, values_callable=enum_values)
@@ -138,20 +140,21 @@ class PomodoroPreference(Base):
     rate: Mapped[float | None] = mapped_column()
 
     __table_args__ = (
+        UniqueConstraint("owner_id", "name", name="uq_pomodoro_preset_owner_id_name"),
         CheckConstraint(
             "num_nonnulls(project_id, category_id) <= 1",
-            name="ck_pomodoro_preference_single_scope",
+            name="ck_pomodoro_preset_single_scope",
         ),
         CheckConstraint(
             "mode <> 'classic' OR (break_minutes IS NOT NULL AND growth IS NULL AND cap_minutes IS NULL AND rate IS NULL)",
-            name="ck_pomodoro_preference_classic_parameters",
+            name="ck_pomodoro_preset_classic_parameters",
         ),
         CheckConstraint(
             "mode <> 'incremental' OR (break_minutes IS NULL AND growth IS NOT NULL AND cap_minutes IS NOT NULL AND rate IS NULL)",
-            name="ck_pomodoro_preference_incremental_parameters",
+            name="ck_pomodoro_preset_incremental_parameters",
         ),
         CheckConstraint(
             "mode <> 'flexible' OR (break_minutes IS NULL AND growth IS NULL AND cap_minutes IS NOT NULL AND rate IS NOT NULL)",
-            name="ck_pomodoro_preference_flexible_parameters",
+            name="ck_pomodoro_preset_flexible_parameters",
         ),
     )
