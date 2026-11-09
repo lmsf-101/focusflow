@@ -1,8 +1,10 @@
 from dataclasses import dataclass
-from enum import Enum
 
-from focusflow_api.domain.pomodoro.breaks import generate_flexible_break_time
-from focusflow_api.domain.pomodoro.curves import curve
+from focusflow_api.domain.pomodoro.breaks import (
+    generate_flexible_break_time,
+    validate_break_ratio,
+)
+from focusflow_api.domain.pomodoro.curves import asymptotic_curve, curve
 from focusflow_api.domain.pomodoro.errors import (
     PomodoroBreakError,
     PomodoroCurveError,
@@ -11,11 +13,7 @@ from focusflow_api.domain.pomodoro.errors import (
 )
 
 INCREMENTAL_BREAK_RATIO = 0.2
-
-
-class PomodoroModes(Enum):
-    CLASSIC = "classic"
-    INCREMENTAL = "incremental"
+FLEXIBLE_BREAK_RATIO = 0.25
 
 
 @dataclass(frozen=True)
@@ -28,7 +26,7 @@ class PomodoroPlan:
             raise PomodoroPlanError("work_times tuple must not be empty")
         elif len(self.break_times) != len(self.work_times) - 1:
             raise PomodoroPlanError(
-                f"Num of break times ({len(self.break_times)}) must be one less than the Num. of work times ({len(self.work_times)})"
+                f"Num of break times ({len(self.break_times)}) must be one less than the Num. of work times ({len(self.work_times)}). Expected {len(self.work_times) - 1}, got {len(self.break_times)}"
             )
 
 
@@ -107,6 +105,46 @@ def plan_incremental(
 
     break_times = tuple(
         generate_flexible_break_time(work_time, INCREMENTAL_BREAK_RATIO)
+        for work_time in work_times[:-1]
+    )
+
+    return PomodoroPlan(work_times, break_times)
+
+
+def plan_flexible(
+    start_minutes: int,
+    cap_minutes: int,
+    rate: float,
+    num_of_rounds: int,
+    break_ratio: float = FLEXIBLE_BREAK_RATIO,
+) -> PomodoroPlan:
+    """
+    Generates a Flexible Pomodoro Plan: The work times follow an asymptotic curve that rises quickly at first and then levels off at the cap.
+
+    Each break is a fraction (break_ratio) of the work time of the round it follows. There is no break after the last round.
+
+    Args:
+        start_minutes (integer): The initial timer for the first round. Must be at least 1 minute, cannot be 0 or negative
+        cap_minutes (integer): The maximum limit for any working timer. Must be bigger than the initial timer, and cannot be negative.
+        rate (float): The rate in which the working times increases each round. Bigger rates means bigger incrementals. Must be a value between 0.2 and 0.6
+        num_of_rounds (integer): Number of rounds for the session. Must be at least 1 round.
+        break_ratio (float): The fraction of each work time that is used for the break that follows it. Must be greater than 0 and at most 1. Defaults to FLEXIBLE_BREAK_RATIO.
+    Returns:
+        PomodoroPlan with flexible sessions for each round
+
+    Examples:
+        plan_flexible(25, 35, 0.4, 4, 0.25) => PomodoroPlan((25, 29, 31, 33), (6, 7, 8))
+        plan_flexible(5, 40, 0.5, 5, 0.3) => PomodoroPlan((5, 23, 31, 36, 38), (2, 7, 9, 11))
+    """
+
+    validate_break_ratio(break_ratio)
+
+    work_times = tuple(
+        asymptotic_curve(start_minutes, cap_minutes, rate, num_of_rounds)
+    )
+
+    break_times = tuple(
+        generate_flexible_break_time(work_time, break_ratio)
         for work_time in work_times[:-1]
     )
 
