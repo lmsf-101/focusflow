@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from enum import Enum
 
 from focusflow_api.domain.pomodoro.breaks import (
     generate_flexible_break_time,
@@ -15,11 +14,6 @@ from focusflow_api.domain.pomodoro.errors import (
 
 INCREMENTAL_BREAK_RATIO = 0.2
 FLEXIBLE_BREAK_RATIO = 0.25
-
-
-class PomodoroModes(Enum):
-    CLASSIC = "classic"
-    INCREMENTAL = "incremental"
 
 
 @dataclass(frozen=True)
