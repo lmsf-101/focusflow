@@ -1,8 +1,21 @@
-from typing import Annotated
+from typing import Annotated, Self
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, StringConstraints
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    EmailStr,
+    Field,
+    StringConstraints,
+    model_validator,
+)
 
-from focusflow_api.models import MAX_TASK_TITLE_LENGTH, TaskPriority, TaskStatus
+from focusflow_api.models import (
+    MAX_POMODORO_PRESET_NAME_LENGTH,
+    MAX_TASK_TITLE_LENGTH,
+    PomodoroMode,
+    TaskPriority,
+    TaskStatus,
+)
 
 
 class UserCreate(BaseModel):
@@ -97,3 +110,121 @@ class TaskUpdate(BaseModel):
     project_id: int | None = None
     category_id: int | None = None
     tag_ids: list[int] = []
+
+
+class PomodoroPresetCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=MAX_POMODORO_PRESET_NAME_LENGTH)
+    mode: PomodoroMode
+    project_id: int | None = None
+    category_id: int | None = None
+    start_minutes: int
+    num_of_rounds: int
+
+    # Atributos que corresponden a
+    # Modo clasico
+    break_minutes: int | None = None
+
+    # Modo incremental
+    growth: int | None = None
+
+    # Modo flexible
+    rate: float | None = None
+
+    # Modo incremental | flexible
+    cap_minutes: int | None = None
+
+    # Validadores para revisar si se cumple con las reglas de los modos
+    @model_validator(mode="after")
+    def classic_mode_validator(self) -> Self:
+
+        if self.mode != PomodoroMode.CLASSIC:
+            return self
+
+        if self.break_minutes is None:
+            raise ValueError(
+                f"break_minutes must be defined if the Pomodoro mode is {PomodoroMode.CLASSIC.value}"
+            )
+
+        elif (
+            self.growth is not None
+            or self.rate is not None
+            or self.cap_minutes is not None
+        ):
+            raise ValueError(
+                f"Input must not contain arguments invalid for the {PomodoroMode.CLASSIC.value} mode (growth, rate, cap_minutes)"
+            )
+
+        else:
+            return self
+
+    @model_validator(mode="after")
+    def incremental_mode_validator(self) -> Self:
+
+        if self.mode != PomodoroMode.INCREMENTAL:
+            return self
+
+        if self.growth is None or self.cap_minutes is None:
+            raise ValueError(
+                f"growth and cap_minutes must be defined if the Pomodoro mode is {PomodoroMode.INCREMENTAL.value}"
+            )
+
+        elif self.rate is not None or self.break_minutes is not None:
+            raise ValueError(
+                f"Input must not contain arguments invalid for the {PomodoroMode.INCREMENTAL.value} mode (rate, break_minutes)"
+            )
+
+        else:
+            return self
+
+    @model_validator(mode="after")
+    def flexible_mode_validator(self) -> Self:
+
+        if self.mode != PomodoroMode.FLEXIBLE:
+            return self
+
+        if self.rate is None or self.cap_minutes is None:
+            raise ValueError(
+                f"rate and cap_minutes must be defined if the Pomodoro mode is {PomodoroMode.FLEXIBLE.value}"
+            )
+
+        elif self.growth is not None or self.break_minutes is not None:
+            raise ValueError(
+                f"Input must not contain arguments invalid for the {PomodoroMode.FLEXIBLE.value} mode (growth, break_minutes)"
+            )
+
+        else:
+            return self
+
+    @model_validator(mode="after")
+    def check_for_single_scope_definition(self) -> Self:
+
+        if self.project_id is not None and self.category_id is not None:
+            raise ValueError(
+                "Only one scope is allowed. project_id and category_id cannot be defined at the same time"
+            )
+
+        return self
+
+
+class PomodoroPresetRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    name: str
+    mode: PomodoroMode
+    start_minutes: int
+    num_of_rounds: int
+    project_id: int | None
+    category_id: int | None
+
+    # Atributos que corresponden a
+    # Modo clasico
+    break_minutes: int | None = None
+
+    # Modo incremental
+    growth: int | None = None
+
+    # Modo flexible
+    rate: float | None = None
+
+    # Modo incremental | flexible
+    cap_minutes: int | None = None
