@@ -2,12 +2,17 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
+from focusflow_api.domain.pomodoro.curves import MAX_NUMBER_ROUNDS, MAX_RATE, MIN_RATE
 from focusflow_api.domain.pomodoro.engine import (
+    FLEXIBLE_BREAK_RATIO,
     PomodoroPlan,
     plan_classic,
+    plan_flexible,
     plan_incremental,
 )
 from focusflow_api.domain.pomodoro.errors import (
+    PomodoroBreakError,
+    PomodoroCurveError,
     PomodoroPlanError,
     PomodoroValidationError,
 )
@@ -156,5 +161,80 @@ def test_plan_incremental_fails_when_invalid_arguments_are_passed(
 
     with pytest.raises(PomodoroValidationError) as exec_info:
         _ = plan_incremental(start_minutes, growth, cap_minutes, num_of_rounds)
+
+    assert exec_info.value.field == expected_field
+
+
+@pytest.mark.parametrize(
+    "start_minutes, cap_minutes, rate, num_of_rounds, break_ratio, expected_work_times, expected_break_times",
+    [
+        (25, 35, 0.4, 4, 0.25, (25, 29, 31, 33), (6, 7, 8)),
+        (5, 40, 0.5, 5, 0.3, (5, 23, 31, 36, 38), (2, 7, 9, 11)),
+        (25, 35, MIN_RATE, 4, 0.25, (25, 27, 29, 30), (6, 7, 7)),
+        (25, 35, MAX_RATE, 4, 0.25, (25, 31, 33, 34), (6, 8, 8)),
+    ],
+)
+def test_plan_flexible_returns_work_times_and_adaptive_break_times(
+    start_minutes: int,
+    cap_minutes: int,
+    rate: float,
+    num_of_rounds: int,
+    break_ratio: float,
+    expected_work_times: tuple[int, ...],
+    expected_break_times: tuple[int, ...],
+):
+    pomodoro_plan = plan_flexible(
+        start_minutes, cap_minutes, rate, num_of_rounds, break_ratio
+    )
+
+    assert pomodoro_plan.work_times == expected_work_times
+    assert pomodoro_plan.break_times == expected_break_times
+
+
+def test_plan_flexible_uses_default_break_ratio_when_omitted():
+
+    pomodoro_plan_without_break_ratio = plan_flexible(
+        start_minutes=25, cap_minutes=35, rate=0.4, num_of_rounds=4
+    )
+    pomodoro_plan_with_break_ratio = plan_flexible(
+        start_minutes=25,
+        cap_minutes=35,
+        rate=0.4,
+        num_of_rounds=4,
+        break_ratio=FLEXIBLE_BREAK_RATIO,
+    )
+
+    assert pomodoro_plan_without_break_ratio == pomodoro_plan_with_break_ratio
+
+
+@pytest.mark.parametrize(
+    "start_minutes, cap_minutes, rate, num_of_rounds, break_ratio, expected_error, expected_field",
+    [
+        (0, 25, 0.2, 4, 0.25, PomodoroCurveError, "start_minutes"),
+        (-5, 25, 0.2, 4, 0.25, PomodoroCurveError, "start_minutes"),
+        (25, 0, 0.4, 4, 0.25, PomodoroCurveError, "cap_minutes"),
+        (5, 5, 0.4, 4, 0.25, PomodoroCurveError, "cap_minutes"),
+        (25, -5, 0.4, 4, 0.25, PomodoroCurveError, "cap_minutes"),
+        (25, 35, MIN_RATE - 0.1, 4, 0.25, PomodoroCurveError, "rate"),
+        (25, 35, MAX_RATE + 0.1, 4, 0.25, PomodoroCurveError, "rate"),
+        (25, 35, 0.4, 0, 0.25, PomodoroCurveError, "num_of_rounds"),
+        (25, 35, 0.4, MAX_NUMBER_ROUNDS + 1, 0.25, PomodoroCurveError, "num_of_rounds"),
+        (20, 25, 0.3, 5, -0.5, PomodoroBreakError, "break_ratio"),
+        (20, 35, 0.4, 1, -0.5, PomodoroBreakError, "break_ratio"),
+        (20, 25, 0.3, 5, 1.2, PomodoroBreakError, "break_ratio"),
+    ],
+)
+def test_plan_flexible_fails_when_invalid_arguments_are_passed(
+    start_minutes: int,
+    cap_minutes: int,
+    rate: float,
+    num_of_rounds: int,
+    break_ratio: float,
+    expected_error: type[PomodoroValidationError],
+    expected_field: str,
+):
+
+    with pytest.raises(expected_error) as exec_info:
+        _ = plan_flexible(start_minutes, cap_minutes, rate, num_of_rounds, break_ratio)
 
     assert exec_info.value.field == expected_field

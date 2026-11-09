@@ -6,6 +6,15 @@ MAXIMUM_RATIO = 1
 MINIMUM_BREAK_MINUTES = 1
 
 
+def validate_break_ratio(break_ratio: float):
+    # Revisar que break_ratio sea mayor de 0, y menor que el MAXIMUM_RATIO
+    if break_ratio <= 0 or break_ratio > MAXIMUM_RATIO:
+        raise PomodoroBreakError(
+            f"break_ratio must be bigger than 0, and less than or equal to the MAXIMUM_RATIO ({MAXIMUM_RATIO})",
+            "break_ratio",
+        )
+
+
 def generate_flexible_break_time(accumulated_time: int, break_ratio: float) -> int:
     """
     Generates a flexible break timer, based on the accumulated work time done and a specific break ratio
@@ -34,12 +43,8 @@ def generate_flexible_break_time(accumulated_time: int, break_ratio: float) -> i
             "accumulated_time",
         )
 
-    # Revisar que break_ratio sea mayor de 0, y menor que el MAXIMUM_RATIO
-    if break_ratio <= 0 or break_ratio > MAXIMUM_RATIO:
-        raise PomodoroBreakError(
-            f"break_ratio must be bigger than 0, and less than or equal to the MAXIMUM_RATIO ({MAXIMUM_RATIO})",
-            "break_ratio",
-        )
+    validate_break_ratio(break_ratio)
+
     break_timer = math.floor((accumulated_time * break_ratio) + 0.5)
 
     return max(break_timer, MINIMUM_BREAK_MINUTES)
