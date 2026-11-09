@@ -28,7 +28,7 @@ class PomodoroPlan:
             raise PomodoroPlanError("work_times tuple must not be empty")
         elif len(self.break_times) != len(self.work_times) - 1:
             raise PomodoroPlanError(
-                f"Num of break times ({len(self.break_times)}) must be one less than the Num. of work times ({len(self.work_times)})"
+                f"Num of break times ({len(self.break_times)}) must be one less than the Num. of work times ({len(self.work_times)}). Expected {len(self.work_times) - 1}, got {len(self.break_times)}"
             )
 
 
