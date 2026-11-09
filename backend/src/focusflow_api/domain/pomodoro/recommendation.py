@@ -3,8 +3,10 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 from focusflow_api.domain.pomodoro.engine import (
+    FLEXIBLE_BREAK_RATIO,
     PomodoroPlan,
     plan_classic,
+    plan_flexible,
     plan_incremental,
 )
 from focusflow_api.domain.pomodoro.errors import PomodoroPlanError
@@ -25,7 +27,16 @@ class IncrementalSuggestion:
     num_of_rounds: int
 
 
-type PomodoroSuggestion = ClassicSuggestion | IncrementalSuggestion
+@dataclass(frozen=True)
+class FlexibleSuggestion:
+    start_minutes: int
+    cap_minutes: int
+    rate: float
+    num_of_rounds: int
+    break_ratio: float = FLEXIBLE_BREAK_RATIO
+
+
+type PomodoroSuggestion = ClassicSuggestion | IncrementalSuggestion | FlexibleSuggestion
 
 
 class RecommendationStrategy(ABC):
@@ -66,7 +77,7 @@ def convert_to_plan(
     Raises:
         PomodoroValidationError: if the suggested parameters do not meet domain rule(s)
 
-        PomodoroPlanError: if the suggestion itself isn't a valid mode (Classic, Incremental)
+        PomodoroPlanError: if the suggestion itself isn't a valid mode (Classic, Incremental, Flexible)
     """
 
     suggested_plan = strategy.recommend(history)
@@ -84,6 +95,15 @@ def convert_to_plan(
             suggested_plan.growth,
             suggested_plan.cap_minutes,
             suggested_plan.num_of_rounds,
+        )
+
+    elif isinstance(suggested_plan, FlexibleSuggestion):
+        return plan_flexible(
+            suggested_plan.start_minutes,
+            suggested_plan.cap_minutes,
+            suggested_plan.rate,
+            suggested_plan.num_of_rounds,
+            suggested_plan.break_ratio,
         )
 
     else:
