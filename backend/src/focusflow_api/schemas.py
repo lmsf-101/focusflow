@@ -9,6 +9,12 @@ from pydantic import (
     model_validator,
 )
 
+from focusflow_api.domain.pomodoro.curves import (
+    MAX_NUMBER_ROUNDS,
+    MAX_POMODORO_LIMIT,
+    MAX_RATE,
+    MIN_RATE,
+)
 from focusflow_api.models import (
     MAX_POMODORO_PRESET_NAME_LENGTH,
     MAX_TASK_TITLE_LENGTH,
@@ -117,21 +123,21 @@ class PomodoroPresetCreate(BaseModel):
     mode: PomodoroMode
     project_id: int | None = None
     category_id: int | None = None
-    start_minutes: int
-    num_of_rounds: int
+    start_minutes: int = Field(ge=1, le=MAX_POMODORO_LIMIT)
+    num_of_rounds: int = Field(ge=1, le=MAX_NUMBER_ROUNDS)
 
     # Atributos que corresponden a
     # Modo clasico
-    break_minutes: int | None = None
+    break_minutes: int | None = Field(default=None, gt=0)
 
     # Modo incremental
-    growth: int | None = None
+    growth: int | None = Field(default=None, ge=0)
 
     # Modo flexible
-    rate: float | None = None
+    rate: float | None = Field(default=None, ge=MIN_RATE, le=MAX_RATE)
 
     # Modo incremental | flexible
-    cap_minutes: int | None = None
+    cap_minutes: int | None = Field(default=None, le=MAX_POMODORO_LIMIT)
 
     # Validadores para revisar si se cumple con las reglas de los modos
     @model_validator(mode="after")
@@ -173,6 +179,11 @@ class PomodoroPresetCreate(BaseModel):
                 f"Input must not contain arguments invalid for the {PomodoroMode.INCREMENTAL.value} mode (rate, break_minutes)"
             )
 
+        elif self.cap_minutes < self.start_minutes:
+            raise ValueError(
+                f"Cap minutes ({self.cap_minutes}) must be a value equal or greater than the initial minutes value ({self.start_minutes})"
+            )
+
         else:
             return self
 
@@ -190,6 +201,11 @@ class PomodoroPresetCreate(BaseModel):
         elif self.growth is not None or self.break_minutes is not None:
             raise ValueError(
                 f"Input must not contain arguments invalid for the {PomodoroMode.FLEXIBLE.value} mode (growth, break_minutes)"
+            )
+
+        elif self.cap_minutes <= self.start_minutes:
+            raise ValueError(
+                f"Cap minutes ({self.cap_minutes}) must be a value greater than the initial minutes value ({self.start_minutes})"
             )
 
         else:

@@ -389,3 +389,230 @@ def test_PomodoroPresetRead_can_be_built_from_a_PomodoroPreset_object():
     assert preset_data.mode == PomodoroMode.CLASSIC
     assert preset_data.break_minutes == 5
     assert preset_data.growth is None
+
+
+# Verificar que PomodoroPresetCreate rechaza valores fuera de rango
+@pytest.mark.parametrize(
+    "mode, start_minutes, num_of_rounds, break_minutes, growth, rate, cap_minutes, error_match",
+    [
+        pytest.param(
+            "classic",
+            0,
+            4,
+            5,
+            None,
+            None,
+            None,
+            r"start_minutes\s+Input should be greater than or equal to 1",
+            id="start_below_minimum",
+        ),
+        pytest.param(
+            "classic",
+            81,
+            4,
+            5,
+            None,
+            None,
+            None,
+            r"start_minutes\s+Input should be less than or equal to 80",
+            id="start_above_maximum",
+        ),
+        pytest.param(
+            "classic",
+            25,
+            0,
+            5,
+            None,
+            None,
+            None,
+            r"num_of_rounds\s+Input should be greater than or equal to 1",
+            id="rounds_below_minimum",
+        ),
+        pytest.param(
+            "classic",
+            25,
+            9,
+            5,
+            None,
+            None,
+            None,
+            r"num_of_rounds\s+Input should be less than or equal to 8",
+            id="rounds_above_maximum",
+        ),
+        pytest.param(
+            "classic",
+            25,
+            4,
+            0,
+            None,
+            None,
+            None,
+            r"break_minutes\s+Input should be greater than 0",
+            id="break_not_positive",
+        ),
+        pytest.param(
+            "incremental",
+            25,
+            4,
+            None,
+            -1,
+            None,
+            50,
+            r"growth\s+Input should be greater than or equal to 0",
+            id="growth_negative",
+        ),
+        pytest.param(
+            "incremental",
+            25,
+            4,
+            None,
+            5,
+            None,
+            81,
+            r"cap_minutes\s+Input should be less than or equal to 80",
+            id="incremental_cap_above_maximum",
+        ),
+        pytest.param(
+            "incremental",
+            25,
+            4,
+            None,
+            5,
+            None,
+            24,
+            r"Cap minutes \(24\) must be a value equal or greater",
+            id="incremental_cap_below_start",
+        ),
+        pytest.param(
+            "flexible",
+            25,
+            4,
+            None,
+            None,
+            0.19,
+            50,
+            r"rate\s+Input should be greater than or equal to 0\.2",
+            id="rate_below_minimum",
+        ),
+        pytest.param(
+            "flexible",
+            25,
+            4,
+            None,
+            None,
+            0.61,
+            50,
+            r"rate\s+Input should be less than or equal to 0\.6",
+            id="rate_above_maximum",
+        ),
+        pytest.param(
+            "flexible",
+            25,
+            4,
+            None,
+            None,
+            0.4,
+            81,
+            r"cap_minutes\s+Input should be less than or equal to 80",
+            id="flexible_cap_above_maximum",
+        ),
+        pytest.param(
+            "flexible",
+            25,
+            4,
+            None,
+            None,
+            0.4,
+            25,
+            r"Cap minutes \(25\) must be a value greater than",
+            id="flexible_cap_equal_to_start",
+        ),
+        pytest.param(
+            "flexible",
+            25,
+            4,
+            None,
+            None,
+            0.4,
+            24,
+            r"Cap minutes \(24\) must be a value greater than",
+            id="flexible_cap_below_start",
+        ),
+    ],
+)
+def test_PomodoroPresetCreate_fails_if_values_are_out_of_range(
+    mode,
+    start_minutes,
+    num_of_rounds,
+    break_minutes,
+    growth,
+    rate,
+    cap_minutes,
+    error_match,
+):
+
+    with pytest.raises(pydantic.ValidationError, match=error_match):
+        _ = PomodoroPresetCreate(
+            name="preset-error",
+            mode=mode,
+            start_minutes=start_minutes,
+            break_minutes=break_minutes,
+            growth=growth,
+            num_of_rounds=num_of_rounds,
+            rate=rate,
+            cap_minutes=cap_minutes,
+        )
+
+
+# Verificar que PomodoroPresetCreate acepta los valores justo en el borde de cada rango
+@pytest.mark.parametrize(
+    "mode, start_minutes, num_of_rounds, break_minutes, growth, rate, cap_minutes",
+    [
+        pytest.param("classic", 1, 1, 1, None, None, None, id="classic_minimum_values"),
+        pytest.param(
+            "classic", 80, 8, 5, None, None, None, id="classic_maximum_values"
+        ),
+        pytest.param(
+            "incremental", 25, 4, None, 0, None, 50, id="incremental_growth_zero"
+        ),
+        pytest.param(
+            "incremental", 25, 4, None, 5, None, 25, id="incremental_cap_equal_to_start"
+        ),
+        pytest.param(
+            "incremental", 25, 4, None, 5, None, 80, id="incremental_cap_at_limit"
+        ),
+        pytest.param(
+            "flexible", 25, 4, None, None, 0.2, 50, id="flexible_rate_at_minimum"
+        ),
+        pytest.param(
+            "flexible", 25, 4, None, None, 0.6, 50, id="flexible_rate_at_maximum"
+        ),
+        pytest.param(
+            "flexible", 25, 4, None, None, 0.4, 26, id="flexible_cap_just_above_start"
+        ),
+        pytest.param(
+            "flexible", 25, 4, None, None, 0.4, 80, id="flexible_cap_at_limit"
+        ),
+    ],
+)
+def test_PomodoroPresetCreate_accepts_values_at_range_borders(
+    mode, start_minutes, num_of_rounds, break_minutes, growth, rate, cap_minutes
+):
+
+    preset_input = PomodoroPresetCreate(
+        name="preset-test",
+        mode=mode,
+        start_minutes=start_minutes,
+        num_of_rounds=num_of_rounds,
+        break_minutes=break_minutes,
+        growth=growth,
+        rate=rate,
+        cap_minutes=cap_minutes,
+    )
+
+    assert preset_input.start_minutes == start_minutes
+    assert preset_input.mode == mode
+    assert preset_input.break_minutes == break_minutes
+    assert preset_input.growth == growth
+    assert preset_input.rate == rate
+    assert preset_input.cap_minutes == cap_minutes
