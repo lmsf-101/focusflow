@@ -5,13 +5,16 @@ from collections.abc import Callable
 import structlog
 from fastapi import Depends, FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from focusflow_api.config import Settings, get_settings
+from focusflow_api.domain.pomodoro.errors import PomodoroValidationError
 from focusflow_api.logging import configure_logging
 from focusflow_api.routers.auth import router as auth_router
 from focusflow_api.routers.categories import router as categories_router
 from focusflow_api.routers.presets import router as presets_router
 from focusflow_api.routers.projects import router as projects_router
+from focusflow_api.routers.sessions import router as sessions_router
 from focusflow_api.routers.tags import router as tags_router
 from focusflow_api.routers.tasks import router as tasks_router
 
@@ -61,12 +64,31 @@ def create_app():
         allow_origins=get_settings().cors_origins,
     )
 
+    # Manejador para excepcion PomodoroValidationError
+    @app.exception_handler(PomodoroValidationError)
+    async def pomodoro_validation_exception_handler(
+        request: Request, exc: PomodoroValidationError
+    ):
+        return JSONResponse(
+            status_code=422,
+            content={
+                "detail": [
+                    {
+                        "type": "pomodoro_validation_error",
+                        "loc": ["body", exc.field],
+                        "msg": str(exc),
+                    }
+                ]
+            },
+        )
+
     app.include_router(auth_router)
     app.include_router(projects_router)
     app.include_router(categories_router)
     app.include_router(tasks_router)
     app.include_router(tags_router)
     app.include_router(presets_router)
+    app.include_router(sessions_router)
 
     log.info("app started")
 
