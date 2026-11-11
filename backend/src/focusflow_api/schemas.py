@@ -1,4 +1,4 @@
-from typing import Annotated, Self
+from typing import Annotated, Literal, Self
 
 from pydantic import (
     BaseModel,
@@ -15,6 +15,7 @@ from focusflow_api.domain.pomodoro.curves import (
     MAX_RATE,
     MIN_RATE,
 )
+from focusflow_api.domain.pomodoro.engine import FLEXIBLE_BREAK_RATIO
 from focusflow_api.models import (
     MAX_POMODORO_PRESET_NAME_LENGTH,
     MAX_TASK_TITLE_LENGTH,
@@ -244,3 +245,39 @@ class PomodoroPresetRead(BaseModel):
 
     # Modo incremental | flexible
     cap_minutes: int | None = None
+
+
+class _PlanRequestBase(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    start_minutes: int
+    num_of_rounds: int
+
+
+class ClassicPlanRequest(_PlanRequestBase):
+    mode: Literal[PomodoroMode.CLASSIC]
+    break_minutes: int
+
+
+class IncrementalPlanRequest(_PlanRequestBase):
+    mode: Literal[PomodoroMode.INCREMENTAL]
+    cap_minutes: int
+    growth: int
+
+
+class FlexiblePlanRequest(_PlanRequestBase):
+    mode: Literal[PomodoroMode.FLEXIBLE]
+    cap_minutes: int
+    rate: float
+    break_ratio: float = FLEXIBLE_BREAK_RATIO
+
+
+type PlanRequest = Annotated[
+    ClassicPlanRequest | IncrementalPlanRequest | FlexiblePlanRequest,
+    Field(discriminator="mode"),
+]
+
+
+class PlanResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    work_times: tuple[int, ...]
+    break_times: tuple[int, ...]
