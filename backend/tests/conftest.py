@@ -19,6 +19,23 @@ from focusflow_api.app import create_app
 from focusflow_api.config import get_settings
 from focusflow_api.db import Base, get_db
 
+# Valores válidos por modo para crear presets (cumplen las reglas del dominio y los rangos del schema)
+_PRESET_DEFAULTS = {
+    "classic": {"start_minutes": 25, "break_minutes": 5, "num_of_rounds": 4},
+    "incremental": {
+        "start_minutes": 20,
+        "growth": 2,
+        "cap_minutes": 30,
+        "num_of_rounds": 4,
+    },
+    "flexible": {
+        "start_minutes": 20,
+        "cap_minutes": 40,
+        "rate": 0.4,
+        "num_of_rounds": 4,
+    },
+}
+
 
 # Fixture de base de datos (test_engine)
 @pytest.fixture(scope="session")
@@ -177,6 +194,25 @@ def make_task(client):
                 body[key] = value
 
         response = client.post("/tasks", json=body, headers=headers)
+        assert response.status_code == 201, response.text
+        return response.json()
+
+    return _make
+
+
+# Funcion que genera un nuevo preset a partir del token de auth y regresa sus datos.
+# Lo que se pase en **fields pisa los valores por defecto del modo (ej. project_id=3)
+@pytest.fixture(scope="function")
+def make_preset(client):
+    def _make(
+        headers: dict[str, str],
+        *,
+        name: str = "Test Preset",
+        mode: str = "classic",
+        **fields,
+    ) -> dict:
+        body = {"name": name, "mode": mode, **_PRESET_DEFAULTS[mode], **fields}
+        response = client.post("/presets", json=body, headers=headers)
         assert response.status_code == 201, response.text
         return response.json()
 

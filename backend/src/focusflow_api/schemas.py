@@ -247,6 +247,28 @@ class PomodoroPresetRead(BaseModel):
     cap_minutes: int | None = None
 
 
+class PomodoroPresetUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    name: str | None = None
+    project_id: int | None = None
+    category_id: int | None = None
+    start_minutes: int | None = None
+    num_of_rounds: int | None = None
+
+    # Atributos que corresponden a
+    # Modo clasico
+    break_minutes: int | None = None
+
+    # Modo incremental
+    growth: int | None = None
+
+    # Modo flexible
+    rate: float | None = None
+
+    # Modo incremental | flexible
+    cap_minutes: int | None = None
+
+
 class _PlanRequestBase(BaseModel):
     model_config = ConfigDict(extra="forbid")
     start_minutes: int
