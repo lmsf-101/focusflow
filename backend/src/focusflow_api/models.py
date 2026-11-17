@@ -1,14 +1,21 @@
+from datetime import datetime
 from enum import Enum
+from typing import Any
 
 from sqlalchemy import (
+    JSON,
     CheckConstraint,
     Column,
+    DateTime,
     ForeignKey,
     String,
     Table,
     UniqueConstraint,
+    func,
+    text,
 )
 from sqlalchemy import Enum as sqlEnum
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from focusflow_api.db import Base
@@ -45,6 +52,12 @@ class PomodoroMode(str, Enum):
     CLASSIC = "classic"
     INCREMENTAL = "incremental"
     FLEXIBLE = "flexible"
+
+
+class SessionStatus(str, Enum):
+    ACTIVE = "active"
+    COMPLETED = "completed"
+    ABANDONED = "abandoned"
 
 
 class User(Base):
@@ -156,5 +169,72 @@ class PomodoroPreset(Base):
         CheckConstraint(
             "mode <> 'flexible' OR (break_minutes IS NULL AND growth IS NULL AND cap_minutes IS NOT NULL AND rate IS NOT NULL)",
             name="ck_pomodoro_preset_flexible_parameters",
+        ),
+    )
+
+
+class PomodoroSession(Base):
+    __tablename__ = "pomodoro_session"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    owner_id: Mapped[int] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"))
+    mode: Mapped["PomodoroMode"] = mapped_column(
+        sqlEnum(PomodoroMode, values_callable=enum_values)
+    )
+    status: Mapped["SessionStatus"] = mapped_column(
+        sqlEnum(SessionStatus, values_callable=enum_values)
+    )
+    planned_config: Mapped[dict[str, Any]] = mapped_column(
+        JSON().with_variant(JSONB(), "postgresql")
+    )
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    ended_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+    )
+    summary: Mapped[dict[str, Any] | None] = mapped_column(
+        JSON().with_variant(JSONB(), "postgresql")
+    )
+
+    session_tasks: Mapped[list["PomodoroSessionTask"] | None] = relationship(
+        back_populates="pomodoro_session"
+    )
+
+    __table_args__ = (
+        CheckConstraint(
+            "(status = 'active') = (ended_at IS NULL)",
+            name="ck_pomodoro_session_status_ended_at",
+        ),
+    )
+
+
+class PomodoroSessionTask(Base):
+    __tablename__ = "pomodoro_session_task"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    pomodoro_session_id: Mapped[int] = mapped_column(
+        ForeignKey("pomodoro_session.id", ondelete="CASCADE")
+    )
+    pomodoro_session: Mapped["PomodoroSession"] = relationship(
+        back_populates="session_tasks"
+    )
+    task_id: Mapped[int | None] = mapped_column(
+        ForeignKey("task.id", ondelete="SET NULL")
+    )
+    task_title: Mapped[str] = mapped_column()
+    category_id: Mapped[int | None] = mapped_column(
+        ForeignKey("category.id", ondelete="SET NULL")
+    )
+    estimate_minutes: Mapped[int | None] = mapped_column()
+    actual_minutes: Mapped[int] = mapped_column(server_default=text("0"))
+    completed: Mapped[bool] = mapped_column(server_default=text("false"))
+
+    __table_args__ = (
+        CheckConstraint(
+            "estimate_minutes > 0", name="ck_pomodoro_session_task_estimate_positive"
+        ),
+        UniqueConstraint(
+            "pomodoro_session_id",
+            "task_id",
+            name="uq_pomodoro_session_task_pomodoro_session_id_task_id",
         ),
     )
