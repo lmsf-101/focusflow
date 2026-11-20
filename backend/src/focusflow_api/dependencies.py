@@ -94,3 +94,23 @@ def get_owned_tags_or_404(db: Session, tag_ids: list[int], user_id: int) -> list
         raise HTTPException(status_code=404, detail="One or more tags was not found.")
 
     return user_tags_list
+
+
+def get_owned_tasks_or_404(
+    db: Session, task_ids: list[int], user_id: int
+) -> list[Task]:
+
+    if not task_ids:
+        return []
+
+    unique_ids = set(task_ids)
+
+    user_tasks_stmt = select(Task).where(
+        Task.owner_id == user_id, Task.id.in_(unique_ids)
+    )
+    user_tasks_list = db.execute(user_tasks_stmt).scalars().all()
+
+    if len(unique_ids) != len(user_tasks_list):
+        raise HTTPException(status_code=404, detail="One or more tasks was not found.")
+
+    return user_tasks_list

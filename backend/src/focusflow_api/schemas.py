@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Annotated, Literal, Self
 
 from pydantic import (
@@ -20,6 +21,7 @@ from focusflow_api.models import (
     MAX_POMODORO_PRESET_NAME_LENGTH,
     MAX_TASK_TITLE_LENGTH,
     PomodoroMode,
+    SessionStatus,
     TaskPriority,
     TaskStatus,
 )
@@ -303,3 +305,50 @@ class PlanResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     work_times: tuple[int, ...]
     break_times: tuple[int, ...]
+
+
+class SessionTaskInput(BaseModel):
+    task_id: int
+    estimate_minutes: int | None = Field(default=None, gt=0)
+
+
+class PlannedConfig(BaseModel):
+    schema_version: Literal[1]
+    params: PlanRequest
+    plan: PlanResponse
+
+
+class PomodoroSessionCreate(BaseModel):
+    params: PlanRequest
+    tasks: list[SessionTaskInput] = []
+
+    @model_validator(mode="after")
+    def check_for_duplicated_tasks(self) -> Self:
+        task_ids = [task.task_id for task in self.tasks]
+
+        if len(task_ids) != len(set(task_ids)):
+            raise ValueError("Cannot have duplicated tasks within a session")
+
+        return self
+
+
+class PomodoroSessionTaskRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    task_id: int | None
+    task_title: str
+    category_id: int | None
+    estimate_minutes: int | None
+    actual_minutes: int
+    completed: bool
+
+
+class PomodoroSessionRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    mode: PomodoroMode
+    status: SessionStatus
+    started_at: datetime
+    ended_at: datetime | None
+    planned_config: PlannedConfig
+    session_tasks: list[PomodoroSessionTaskRead]
