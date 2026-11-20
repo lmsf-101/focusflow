@@ -1,3 +1,5 @@
+from typing import Any
+
 from focusflow_api.domain.pomodoro.engine import (
     PomodoroPlan,
     plan_classic,
@@ -9,8 +11,12 @@ from focusflow_api.schemas import (
     ClassicPlanRequest,
     FlexiblePlanRequest,
     IncrementalPlanRequest,
+    PlannedConfig,
     PlanRequest,
+    PlanResponse,
 )
+
+PLANNED_CONFIG_SCHEMA_VERSION = 1
 
 
 def create_plan_from_request(plan: PlanRequest) -> PomodoroPlan:
@@ -42,3 +48,15 @@ def create_plan_from_request(plan: PlanRequest) -> PomodoroPlan:
         raise PomodoroPlanError(
             "An error occurred trying to setup the Pomodoro Session"
         )
+
+
+def build_planned_config(params: PlanRequest) -> dict[str, Any]:
+    pomodoro_plan = create_plan_from_request(params)
+
+    config_plan = PlannedConfig(
+        schema_version=PLANNED_CONFIG_SCHEMA_VERSION,
+        params=params,
+        plan=PlanResponse.model_validate(pomodoro_plan),
+    )
+
+    return config_plan.model_dump(mode="json")
