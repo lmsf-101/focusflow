@@ -19,6 +19,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from focusflow_api.db import Base
+from focusflow_api.domain.pomodoro.session_enums import SessionStatus
 
 MAX_TASK_TITLE_LENGTH = 100
 MAX_POMODORO_PRESET_NAME_LENGTH = 75
@@ -52,12 +53,6 @@ class PomodoroMode(str, Enum):
     CLASSIC = "classic"
     INCREMENTAL = "incremental"
     FLEXIBLE = "flexible"
-
-
-class SessionStatus(str, Enum):
-    ACTIVE = "active"
-    COMPLETED = "completed"
-    ABANDONED = "abandoned"
 
 
 class User(Base):
