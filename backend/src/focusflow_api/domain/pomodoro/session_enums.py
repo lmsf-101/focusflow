@@ -12,3 +12,8 @@ class SessionEvent(str, Enum):
     COMPLETE_SESSION = "complete_session"
     QUIT_SESSION = "quit_session"
     EXPIRE_SESSION = "expire_session"
+
+
+class IntervalType(str, Enum):
+    WORK = "work"
+    BREAK = "break"
