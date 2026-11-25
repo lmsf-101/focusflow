@@ -1,3 +1,6 @@
+from focusflow_api.domain.pomodoro.session_enums import SessionEvent, SessionStatus
+
+
 class PomodoroError(Exception):
     pass
 
@@ -18,3 +21,16 @@ class PomodoroBreakError(PomodoroValidationError):
 
 class PomodoroPlanError(PomodoroError):
     pass
+
+
+class InvalidTransitionError(PomodoroError):
+    def __init__(
+        self, session_status: SessionStatus, session_event: SessionEvent
+    ) -> None:
+        super().__init__(
+            f"Event '{session_event.value}' is not allowed "
+            f"in state '{session_status.value}'"
+        )
+
+        self.session_status = session_status
+        self.session_event = session_event

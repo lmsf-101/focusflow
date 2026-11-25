@@ -240,3 +240,122 @@ def test_create_session_fails_if_estimate_minutes_is_invalid(
     detail = session_post_request.json()["detail"][0]
     assert detail["type"] == "greater_than"
     assert detail["loc"] == ["body", "tasks", 0, "estimate_minutes"]
+
+
+@pytest.mark.integration
+def test_quit_session(client: TestClient, auth_headers, make_task):
+
+    john = auth_headers("john@example.com")
+    john_task = make_task(john)
+
+    params = {
+        "mode": "classic",
+        "start_minutes": 25,
+        "break_minutes": 5,
+        "num_of_rounds": 4,
+    }
+
+    session_tasks = [
+        {"task_id": john_task["id"], "estimate_minutes": 25},
+    ]
+
+    session_input = {"params": params, "tasks": session_tasks}
+
+    create_session_request = client.post("/sessions", json=session_input, headers=john)
+
+    john_session_id = create_session_request.json()["id"]
+
+    quit_session_request = client.post(
+        f"/sessions/{john_session_id}/quit", headers=john
+    )
+
+    assert quit_session_request.status_code == 200
+
+    quit_session_json = quit_session_request.json()
+
+    assert quit_session_json["status"] == "abandoned"
+    assert quit_session_json["ended_at"] is not None
+
+    assert len(quit_session_json["session_tasks"]) == 1
+    assert quit_session_json["session_tasks"][0]["task_id"] == john_task["id"]
+    assert quit_session_json["session_tasks"][0]["task_title"] == john_task["title"]
+
+
+@pytest.mark.integration
+def test_trying_to_quit_session_twice_results_in_error(
+    client: TestClient, auth_headers
+):
+
+    john = auth_headers("john@example.com")
+
+    params = {
+        "mode": "classic",
+        "start_minutes": 25,
+        "break_minutes": 5,
+        "num_of_rounds": 4,
+    }
+
+    session_input = {"params": params}
+
+    create_session_request = client.post("/sessions", json=session_input, headers=john)
+
+    john_session_id = create_session_request.json()["id"]
+
+    first_quit = client.post(f"/sessions/{john_session_id}/quit", headers=john)
+
+    assert first_quit.status_code == 200
+
+    second_quit = client.post(f"/sessions/{john_session_id}/quit", headers=john)
+
+    assert second_quit.status_code == 409
+    assert (
+        second_quit.json()["detail"]
+        == "Event 'quit_session' is not allowed in state 'abandoned'"
+    )
+
+
+@pytest.mark.integration
+def test_quit_session_fails_if_user_does_not_own_session(
+    client: TestClient, auth_headers
+):
+
+    john = auth_headers("john@example.com")
+    jane = auth_headers("jane@example.com")
+
+    params = {
+        "mode": "classic",
+        "start_minutes": 25,
+        "break_minutes": 5,
+        "num_of_rounds": 4,
+    }
+
+    session_input = {"params": params}
+
+    create_session_request = client.post("/sessions", json=session_input, headers=john)
+
+    john_session_id = create_session_request.json()["id"]
+
+    jane_quit_request = client.post(f"/sessions/{john_session_id}/quit", headers=jane)
+
+    assert jane_quit_request.status_code == 404
+
+
+@pytest.mark.integration
+def test_quit_session_fails_without_user_credentials(client: TestClient, auth_headers):
+    john = auth_headers("john@example.com")
+    params = {
+        "mode": "classic",
+        "start_minutes": 25,
+        "break_minutes": 5,
+        "num_of_rounds": 4,
+    }
+
+    session_input = {"params": params}
+
+    create_session_request = client.post("/sessions", json=session_input, headers=john)
+
+    john_session_id = create_session_request.json()["id"]
+
+    quit_request_with_no_header = client.post(f"/sessions/{john_session_id}/quit")
+
+    assert quit_request_with_no_header.status_code == 401

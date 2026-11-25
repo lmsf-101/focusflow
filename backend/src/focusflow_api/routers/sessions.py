@@ -2,7 +2,11 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from focusflow_api.db import get_db
-from focusflow_api.dependencies import get_current_user, get_owned_tasks_or_404
+from focusflow_api.dependencies import (
+    get_current_user,
+    get_owned_session,
+    get_owned_tasks_or_404,
+)
 from focusflow_api.domain.pomodoro.engine import PomodoroPlan
 from focusflow_api.models import (
     PomodoroSession,
@@ -16,6 +20,7 @@ from focusflow_api.schemas import (
     PomodoroSessionCreate,
     PomodoroSessionRead,
 )
+from focusflow_api.services.session_lifecycle import abandon_session
 from focusflow_api.services.session_planning import (
     build_planned_config,
     create_plan_from_request,
@@ -72,3 +77,16 @@ def plan_session(
 ) -> PomodoroPlan:
 
     return create_plan_from_request(body)
+
+
+@router.post("/{session_id}/quit", response_model=PomodoroSessionRead)
+def quit_session(
+    db: Session = Depends(get_db),
+    pomodoro_session: PomodoroSession = Depends(get_owned_session),
+) -> PomodoroSession:
+
+    abandon_session(pomodoro_session)
+
+    db.commit()
+
+    return pomodoro_session

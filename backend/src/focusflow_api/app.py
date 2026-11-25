@@ -8,7 +8,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from focusflow_api.config import Settings, get_settings
-from focusflow_api.domain.pomodoro.errors import PomodoroValidationError
+from focusflow_api.domain.pomodoro.errors import (
+    InvalidTransitionError,
+    PomodoroValidationError,
+)
 from focusflow_api.logging import configure_logging
 from focusflow_api.routers.auth import router as auth_router
 from focusflow_api.routers.categories import router as categories_router
@@ -81,6 +84,13 @@ def create_app():
                 ]
             },
         )
+
+    # Manejador para excepcion InvalidTransitionError
+    @app.exception_handler(InvalidTransitionError)
+    async def invalid_transition_exception_handler(
+        request: Request, exc: InvalidTransitionError
+    ):
+        return JSONResponse(status_code=409, content={"detail": str(exc)})
 
     app.include_router(auth_router)
     app.include_router(projects_router)
