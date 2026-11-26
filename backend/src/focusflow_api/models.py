@@ -19,7 +19,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from focusflow_api.db import Base
-from focusflow_api.domain.pomodoro.session_enums import SessionStatus
+from focusflow_api.domain.pomodoro.session_enums import IntervalType, SessionStatus
 
 MAX_TASK_TITLE_LENGTH = 100
 MAX_POMODORO_PRESET_NAME_LENGTH = 75
@@ -231,5 +231,55 @@ class PomodoroSessionTask(Base):
             "pomodoro_session_id",
             "task_id",
             name="uq_pomodoro_session_task_pomodoro_session_id_task_id",
+        ),
+    )
+
+
+class PomodoroInterval(Base):
+    __tablename__ = "pomodoro_interval"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    pomodoro_session_id: Mapped[int] = mapped_column(
+        ForeignKey("pomodoro_session.id", ondelete="CASCADE")
+    )
+    interval_type: Mapped["IntervalType"] = mapped_column(
+        sqlEnum(IntervalType, values_callable=enum_values)
+    )
+    position: Mapped[int]
+    planned_minutes: Mapped[int]
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    __table_args__ = (
+        UniqueConstraint(
+            "pomodoro_session_id",
+            "interval_type",
+            "position",
+            name="uq_pomodoro_interval_session_id_interval_type_position",
+        ),
+        CheckConstraint(
+            "planned_minutes > 0", name="ck_pomodoro_interval_planned_minutes"
+        ),
+        CheckConstraint(
+            "ended_at IS NULL OR started_at IS NOT NULL",
+            name="ck_pomodoro_interval_ended_requires_started",
+        ),
+        CheckConstraint(
+            "ended_at >= started_at", name="ck_pomodoro_interval_ended_at_started_at"
+        ),
+    )
+
+
+class PomodoroTimeEntry(Base):
+    __tablename__ = "pomodoro_time_entry"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    session_task_id: Mapped[int] = mapped_column(
+        ForeignKey("pomodoro_session_task.id", ondelete="CASCADE")
+    )
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    __table_args__ = (
+        CheckConstraint(
+            "ended_at >= started_at", name="ck_pomodoro_time_entry_ended_at_started_at"
         ),
     )
