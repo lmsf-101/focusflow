@@ -267,3 +267,19 @@ class PomodoroInterval(Base):
             "ended_at >= started_at", name="ck_pomodoro_interval_ended_at_started_at"
         ),
     )
+
+
+class PomodoroTimeEntry(Base):
+    __tablename__ = "pomodoro_time_entry"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    session_task_id: Mapped[int] = mapped_column(
+        ForeignKey("pomodoro_session_task.id", ondelete="CASCADE")
+    )
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    __table_args__ = (
+        CheckConstraint(
+            "ended_at >= started_at", name="ck_pomodoro_time_entry_ended_at_started_at"
+        ),
+    )
